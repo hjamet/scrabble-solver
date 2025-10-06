@@ -1,0 +1,41 @@
+---
+globs: src/engine/**
+alwaysApply: false
+---
+# Tests unitaires obligatoires pour le moteur
+
+Cette règle oblige l'agent à créer et exécuter au moins un test unitaire simple, précis et déterministe chaque fois qu'il modifie des fichiers situés dans `engine/`.
+
+- **Emplacement des tests**: les fichiers de test doivent être placés dans `tests/unit/engine/`. Utiliser un nom de fichier lisible reflétant le module testé (ex. `test_board.c`, `test_score.c`).
+
+- **Objectif des tests**: vérifier une fonctionnalité centrale et critique du moteur (par exemple: génération de coups correcte, calcul des scores, application/annulation d'un coup, validité du dictionnaire). Ne pas faire du zèle: un ou deux cas ciblés et robustes suffisent.
+
+- **Contraintes**:
+  - Les tests doivent être **rapides** et **déterministes** (fixer les seeds RNG quand nécessaire).
+  - Ils doivent suivre le principe *fail-fast* : si le test échoue, le run doit échouer clairement et renvoyer un code de sortie non nul.
+  - Le code de test (et les commentaires) doit être en anglais; la règle et les instructions peuvent être en français.
+  - Si le test nécessite des dépendances ou modifications des scripts d'exécution, **mettre à jour le `README.md`** conformément à la règle README upkeep.
+
+- **Exécution**:
+  - L'agent doit exécuter les tests localement après avoir ajouté/modifié les tests et inclure la sortie des tests dans le commit/PR (au minimum indiquer si tous les tests passent ou non).
+  - Exemple de commande attendue (adapter à la toolchain du projet) :
+
+```
+# build + exécuter les tests unitaires du moteur
+cd engine
+mkdir -p build && cd build
+cmake ..
+cmake --build . --config Release
+ctest -R engine -V
+```
+
+- **Cas où l'agent ne peut pas exécuter les tests** (p. ex. pas d'accès au runner CI ou à l'environnement de compilation) : l'agent doit toujours créer les tests, documenter précisément comment les exécuter et marquer clairement dans la PR que l'exécution est requise manuellement.
+
+- **Portée**: cette règle s'applique uniquement aux modifications affectant `engine/`. Si une modification touche aussi `mcts/`, appliquer la même exigence pour `tests/unit/mcts/`.
+
+- **Bonne pratique**: les tests doivent être petits, ciblés, et valider un comportement observable (assertions claires). Ils serviront de garde‑fou minimal pour chaque changement du moteur.
+
+
+---
+
+*Rappel*: respecter la règle d'exécution des tests garantit que chaque changement critique du moteur est immédiatement validé par une vérification automatisée et détecte rapidement les régressions.
