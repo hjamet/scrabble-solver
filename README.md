@@ -128,7 +128,6 @@ Le projet utilise un mécanisme `do/undo` pour la manipulation de l'état du jeu
 
 ### Prerequisites
 - C compiler (GCC 9+ or Clang 10+)
-- Node.js 18+
 - CMake 3.16+
 - Git
 
@@ -189,28 +188,88 @@ git clone https://github.com/your-username/scrabble-solver.git
 cd scrabble-solver
 
 # Build the C engine
-cd engine
 mkdir build && cd build
 cmake ..
 make -j$(nproc)
 
-# Install web interface dependencies
-cd ../../web-interface
-npm install
-
-# Download dictionaries
-npm run download-dictionaries
+# Run tests
+./test_main
 ```
 
-### Running the Application
+### Project Structure
+
+The project follows a clean, modular architecture:
+
+```
+scrabble-solver/
+├── src/engine/           # C-based core engine
+│   ├── engine.h         # Public API interface
+│   └── engine.c         # Engine implementation
+├── tests/               # Test suite
+│   └── test_main.c      # Main test executable
+├── build/               # Build artifacts (generated)
+├── CMakeLists.txt       # CMake build configuration
+├── install-dev-env.ps1  # Windows development setup
+└── README.md           # This file
+```
+
+### Important Files
+
+- **`src/engine/engine.h`** : Public API interface for the Scrabble engine
+  - *Role* : Defines all public functions and data structures
+  - *Usage* : Include this header to use the engine in your code
+  - *Example* : `#include "engine.h"` — *provides access to all engine functionality*
+
+- **`src/engine/engine.c`** : Core engine implementation
+  - *Role* : Contains the actual implementation of all engine functions
+  - *Central nodes* : Board representation, move generation, score calculation
+  - *Example* : `make` — *compiles the engine into a library*
+
+- **`CMakeLists.txt`** : Build system configuration
+  - *Role* : Defines how to compile the project and its dependencies
+  - *Points of attention* : Library linking, compiler flags, test configuration
+  - *Example* : `cmake ..` — *generates build files for your platform*
+
+- **`tests/test_main.c`** : Test executable entry point
+  - *Role* : Main function for running all tests
+  - *Usage* : Compile and run to verify engine functionality
+  - *Example* : `./test_main` — *executes the complete test suite*
+
+### Main Commands
+
+- Build the project:
 
 ```bash
-# Start the web interface
-cd web-interface
-npm start
-
-# The application will be available at http://localhost:3000
+mkdir build && cd build
+cmake ..
+make
 ```
+
+*Compiles the engine library and test executable using CMake.*
+
+- Run tests:
+
+```bash
+cd build
+./test_main
+```
+
+*Executes the test suite to verify engine functionality.*
+
+- Clean build:
+
+```bash
+rm -rf build
+```
+
+*Removes all build artifacts for a fresh compilation.*
+
+### Development Workflow
+
+1. **Modify engine code** in `src/engine/`
+2. **Update tests** in `tests/` as needed
+3. **Build and test** using the commands above
+4. **Verify functionality** before committing changes
 
 ## Development Guidelines
 
