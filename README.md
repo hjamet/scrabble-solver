@@ -127,73 +127,60 @@ Le projet utilise un mécanisme `do/undo` pour la manipulation de l'état du jeu
 ## Getting Started
 
 ### Prerequisites
-- C compiler (GCC 9+ or Clang 10+)
+- Microsoft Visual C++ Build Tools 2022 (MSVC)
 - CMake 3.16+
 - Git
 
 ### Environment Setup (Windows)
 
-For Windows development, we use MSYS2 to provide a complete C development environment.
+For Windows development, we use Microsoft Visual C++ (MSVC) Build Tools for native C++ development.
 
-#### Quick Installation
+#### Installation Steps
 
-Run the automated installation script as administrator:
+1. **Download Visual Studio Build Tools 2022**:
+   - Go to [Visual Studio Downloads](https://visualstudio.microsoft.com/fr/downloads/)
+   - Under "Outils pour Visual Studio", download **"Build Tools pour Visual Studio 2022"**
 
-```powershell
-# Run as administrator
-.\install-dev-env.ps1
-```
+2. **Install Build Tools**:
+   - Run the downloaded installer
+   - In the "Charges de travail" tab, select **"Développement desktop en C++"**
+   - In the right panel, ensure **"CMake C++ pour Windows"** is checked
+   - Click "Installer" to begin installation
 
-This script will:
-1. Download and install MSYS2 automatically
-2. Create an installation script for development tools
-3. Add MSYS2 to your system PATH
-
-#### Manual Installation
-
-If you prefer manual installation:
-
-1. **Install MSYS2**: Download from [msys2.org](https://www.msys2.org/) and run the installer
-2. **Launch MSYS2 UCRT64** from the Start Menu
-3. **Install development tools**:
-   ```bash
-   # Update package manager
-   pacman -Syu
-   pacman -Su
-   
-   # Install C development tools
-   pacman -S --needed base-devel mingw-w64-ucrt-x86_64-toolchain
-   
-   # Install CMake and additional tools
-   pacman -S --needed mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-gdb mingw-w64-ucrt-x86_64-git
-   ```
+3. **Use Developer PowerShell**:
+   - **CRITICAL**: Always use **"Developer PowerShell for VS 2022"** from the Start Menu
+   - This terminal automatically configures all necessary environment variables
+   - Do NOT use regular PowerShell or Command Prompt
 
 #### Verify Installation
 
-Test your C environment:
+In **"Developer PowerShell for VS 2022"**, run these commands:
 
-```bash
-# Test compilation
-gcc --version
-make --version
+```powershell
+# Test MSVC compiler
+cl.exe
+
+# Test CMake
 cmake --version
-gdb --version
 ```
+
+Both commands should display version information without errors.
 
 ### Installation
 
-```bash
+```powershell
 # Clone the repository
 git clone https://github.com/your-username/scrabble-solver.git
 cd scrabble-solver
 
-# Build the C engine
-mkdir build && cd build
+# Build the C engine (in Developer PowerShell for VS 2022)
+mkdir build
+cd build
 cmake ..
-make -j$(nproc)
+cmake --build . --config Release
 
 # Run tests
-./test_main
+.\Release\test_main.exe
 ```
 
 ### Project Structure
@@ -209,7 +196,6 @@ scrabble-solver/
 │   └── test_main.c      # Main test executable
 ├── build/               # Build artifacts (generated)
 ├── CMakeLists.txt       # CMake build configuration
-├── install-dev-env.ps1  # Windows development setup
 └── README.md           # This file
 ```
 
@@ -223,43 +209,44 @@ scrabble-solver/
 - **`src/engine/engine.c`** : Core engine implementation
   - *Role* : Contains the actual implementation of all engine functions
   - *Central nodes* : Board representation, move generation, score calculation
-  - *Example* : `make` — *compiles the engine into a library*
+  - *Example* : `cmake --build .` — *compiles the engine into a library*
 
 - **`CMakeLists.txt`** : Build system configuration
   - *Role* : Defines how to compile the project and its dependencies
   - *Points of attention* : Library linking, compiler flags, test configuration
-  - *Example* : `cmake ..` — *generates build files for your platform*
+  - *Example* : `cmake ..` — *generates build files for MSVC on Windows*
 
 - **`tests/test_main.c`** : Test executable entry point
   - *Role* : Main function for running all tests
   - *Usage* : Compile and run to verify engine functionality
-  - *Example* : `./test_main` — *executes the complete test suite*
+  - *Example* : `.\Release\test_main.exe` — *executes the complete test suite*
 
 ### Main Commands
 
 - Build the project:
 
-```bash
-mkdir build && cd build
+```powershell
+mkdir build
+cd build
 cmake ..
-make
+cmake --build . --config Release
 ```
 
-*Compiles the engine library and test executable using CMake.*
+*Compiles the engine library and test executable using CMake and MSVC.*
 
 - Run tests:
 
-```bash
+```powershell
 cd build
-./test_main
+.\Release\test_main.exe
 ```
 
 *Executes the test suite to verify engine functionality.*
 
 - Clean build:
 
-```bash
-rm -rf build
+```powershell
+Remove-Item -Recurse -Force build
 ```
 
 *Removes all build artifacts for a fresh compilation.*
