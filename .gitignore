@@ -1,6 +1,33 @@
 # Cursor Memory Bank
 .cursor/mcp
 .cursor/mcp.json
-tomd.py
-repo.md
-diff
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.log
+
+# Generated files
+install-tools.sh
+build/
+dist/
+*.exe
+*.o
+*.obj
+*.so
+*.dll
+*.dylib
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

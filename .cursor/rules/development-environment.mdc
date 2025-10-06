@@ -1,0 +1,71 @@
+---
+description: Development environment setup and maintenance
+---
+
+# Development Environment Rules
+
+## Installation Script
+
+The project uses a single, clean installation script: [install-dev-env.ps1](mdc:install-dev-env.ps1)
+
+### Usage
+```powershell
+# Run as administrator
+.\install-dev-env.ps1
+```
+
+### What it does
+1. Downloads and installs MSYS2 automatically
+2. Creates `install-tools.sh` for MSYS2 package installation
+3. Adds MSYS2 to system PATH
+4. Provides clear instructions for next steps
+
+## Environment Requirements
+
+### Windows Development
+- **MSYS2 UCRT64**: Primary development environment
+- **GCC**: C/C++ compiler
+- **CMake**: Build system
+- **Make**: Build automation
+- **GDB**: Debugger
+
+### Installation Process
+1. Run `install-dev-env.ps1` as administrator
+2. Launch MSYS2 UCRT64 from Start Menu
+3. Navigate to project directory
+4. Run `./install-tools.sh` in MSYS2 terminal
+5. Restart terminal/PowerShell
+6. Verify with `gcc --version`
+
+## File Management
+
+### Generated Files
+- `install-tools.sh`: Created by installation script, should be deleted after use
+- `build/`: Build output directory, ignored by git
+- Any `.exe`, `.o`, `.obj` files: Generated during compilation
+
+### Temporary Files
+- All temporary files must be deleted immediately after use
+- No temporary files should be committed to git
+- Use `.gitignore` to prevent accidental commits
+
+## Maintenance
+
+### Regular Cleanup
+- Remove `install-tools.sh` after successful installation
+- Clean build directories regularly
+- Remove any temporary test files
+- Keep only essential project files
+
+### Documentation Updates
+- Update README.md when installation process changes
+- Keep environment setup instructions current
+- Remove obsolete documentation
+
+## Best Practices
+
+1. **Single responsibility**: Each script has one clear purpose
+2. **Minimal dependencies**: Avoid unnecessary tools or files
+3. **Clear instructions**: Provide step-by-step guidance
+4. **Automatic cleanup**: Scripts should clean up after themselves
+5. **Error handling**: Provide clear error messages and solutions

@@ -1,0 +1,47 @@
+---
+alwaysApply: true
+description: Language policy for communication and code
+---
+
+# Language Policy
+
+## Communication Language
+- **Chat/Conversation**: Always communicate in French
+- All explanations, descriptions, and responses to the user must be in French
+
+## Code Language
+- **All code elements must be written in English**:
+  - Variable names and function names
+  - Comments and docstrings
+  - Print statements and logging messages
+  - Error messages and exception text
+  - String literals in code
+  - Documentation within code files
+
+## Examples
+✅ **Correct**:
+```python
+# This function calculates the user score
+def calculate_user_score(user_id):
+    """Calculate the score for a given user."""
+    print("Calculating score for user:", user_id)
+    if not user_id:
+        raise ValueError("User ID cannot be empty")
+```
+
+❌ **Incorrect**:
+```python
+# Cette fonction calcule le score utilisateur
+def calculer_score_utilisateur(id_utilisateur):
+    """Calcule le score pour un utilisateur donné."""
+    print("Calcul du score pour l'utilisateur :", id_utilisateur)
+    if not id_utilisateur:
+        raise ValueError("L'ID utilisateur ne peut pas être vide")
+```
+
+## Rationale
+This policy ensures:
+- Code remains international and maintainable by developers worldwide
+- Documentation and error messages are consistent across the codebase
+- French communication provides clarity for French-speaking users
+- English code follows industry standards and best practices

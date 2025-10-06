@@ -17,13 +17,37 @@ The project is structured as a multi-component system:
 
 ```
 scrabble-solver/
-├── engine/           # C-based core engine (position evaluation, move generation)
+├── src/engine/      # C-based core engine (position evaluation, move generation)
 ├── mcts/            # C-based Monte Carlo Tree Search implementation
 ├── web-interface/   # Node.js web application for testing and gameplay
 ├── dictionaries/    # Word lists and dictionaries for multiple languages
 ├── tests/           # Comprehensive test suite
 └── docs/            # Documentation and analysis
 ```
+
+
+## Principes de Conception Stratégique
+
+### Noyau et API
+Le moteur (`src/engine/`) est développé comme une bibliothèque C autonome. Toute interaction avec le moteur doit passer par une API publique unique (`engine.h`), garantissant une forte encapsulation. Cette approche permet :
+- Une séparation claire entre l'interface publique et l'implémentation interne
+- Une évolution indépendante des composants
+- Une facilité de test et de maintenance
+- Une réutilisabilité maximale du code
+
+### Représentation du Plateau
+L'approche adoptée utilise une représentation à deux niveaux pour optimiser les performances :
+- **Grille statique 15x15** : Contient les informations sur les bonus (lettre/score double/triple, mot double/triple). Cette grille est en lecture seule après l'initialisation.
+- **Grille dynamique 15x15** : Contient les tuiles posées sur le plateau. Cette grille est modifiée dynamiquement pendant le jeu.
+
+Cette séparation optimise les accès mémoire en évitant de mélanger des données statiques et dynamiques, améliorant ainsi les performances du cache processeur.
+
+### Manipulation d'État Do/Undo
+Le projet utilise un mécanisme `do/undo` pour la manipulation de l'état du jeu. Cette approche :
+- Évite les copies coûteuses du plateau complet
+- Est fondamentale pour la performance de l'algorithme MCTS qui explore de nombreux états
+- Permet un retour rapide à l'état précédent après évaluation d'un coup
+- Optimise l'utilisation mémoire en ne stockant que les différences entre états
 
 ### Core Components
 
@@ -107,6 +131,55 @@ scrabble-solver/
 - Node.js 18+
 - CMake 3.16+
 - Git
+
+### Environment Setup (Windows)
+
+For Windows development, we use MSYS2 to provide a complete C development environment.
+
+#### Quick Installation
+
+Run the automated installation script as administrator:
+
+```powershell
+# Run as administrator
+.\install-dev-env.ps1
+```
+
+This script will:
+1. Download and install MSYS2 automatically
+2. Create an installation script for development tools
+3. Add MSYS2 to your system PATH
+
+#### Manual Installation
+
+If you prefer manual installation:
+
+1. **Install MSYS2**: Download from [msys2.org](https://www.msys2.org/) and run the installer
+2. **Launch MSYS2 UCRT64** from the Start Menu
+3. **Install development tools**:
+   ```bash
+   # Update package manager
+   pacman -Syu
+   pacman -Su
+   
+   # Install C development tools
+   pacman -S --needed base-devel mingw-w64-ucrt-x86_64-toolchain
+   
+   # Install CMake and additional tools
+   pacman -S --needed mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-gdb mingw-w64-ucrt-x86_64-git
+   ```
+
+#### Verify Installation
+
+Test your C environment:
+
+```bash
+# Test compilation
+gcc --version
+make --version
+cmake --version
+gdb --version
+```
 
 ### Installation
 

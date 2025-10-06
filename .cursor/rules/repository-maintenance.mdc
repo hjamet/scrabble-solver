@@ -1,0 +1,87 @@
+---
+alwaysApply: true
+description: Repository maintenance and cleanliness rules
+---
+
+# Repository Maintenance Rules
+
+## Core Principle: Keep the Repository Clean and Organized
+
+This repository must always remain extremely clean, organized, and professional. Every file should have a clear purpose and contribute to the project's goals.
+
+## File Management Rules
+
+### Temporary Files
+- **NEVER commit temporary files** that serve no long-term purpose
+- **DELETE temporary files** immediately after they are no longer needed
+- If a temporary file is important to keep, it must be:
+  - Added to `.gitignore` if it's generated during development
+  - Moved to an appropriate permanent location if it's valuable
+  - Documented in the README if it's part of the development workflow
+
+### File Organization
+- **One script, one purpose**: Each script should have a single, clear responsibility
+- **Minimal file count**: Avoid creating multiple files when one would suffice
+- **Clear naming**: File names must clearly indicate their purpose
+- **Proper location**: Files must be placed in the correct directory according to their function
+
+### Documentation
+- **Keep documentation current**: Update README.md whenever the project structure changes
+- **Remove obsolete documentation**: Delete documentation for features that no longer exist
+- **Minimal documentation**: Prefer concise, essential information over verbose explanations
+
+## Examples of Files to DELETE
+
+### Temporary Development Files
+- Test scripts that are no longer needed
+- Backup files (`*.bak`, `*.backup`, `*.old`)
+- Temporary installation scripts after successful setup
+- Debug files and logs
+- Generated files that can be recreated
+
+### Redundant Files
+- Multiple scripts doing the same thing
+- Unused configuration files
+- Duplicate documentation
+- Old version files
+
+## Examples of Files to KEEP
+
+### Essential Project Files
+- Core source code in `src/`
+- Tests in `tests/`
+- Documentation in `docs/` or root README
+- Configuration files that are actively used
+- Build scripts that are part of the development workflow
+
+## Maintenance Checklist
+
+Before committing any changes, verify:
+- [ ] No temporary files are being committed
+- [ ] All files serve a clear purpose
+- [ ] Documentation is up to date
+- [ ] File names are descriptive and consistent
+- [ ] Files are in the correct directories
+- [ ] No duplicate functionality exists
+
+## Enforcement
+
+- **Always apply this rule**: This rule applies to every file operation
+- **Fail fast**: If a file doesn't meet these standards, it should be removed or reorganized immediately
+- **Regular cleanup**: Periodically review the repository structure and remove obsolete files
+- **Documentation updates**: Any structural changes must be reflected in the README
+
+## Repository Structure Standards
+
+The repository should maintain this clean structure:
+```
+scrabble-solver/
+├── src/                    # Source code only
+├── tests/                  # Test files only  
+├── docs/                   # Documentation only
+├── README.md              # Main documentation
+├── .gitignore             # Git ignore rules
+└── install-dev-env.ps1    # Single installation script
+```
+
+**Remember**: A clean repository is a professional repository. Every file should earn its place in the codebase.
