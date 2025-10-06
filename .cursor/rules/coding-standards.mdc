@@ -1,0 +1,73 @@
+---
+description: Coding standards for documentation, typing, and language requirements
+alwaysApply: false
+---
+# Coding Standards
+
+## Documentation Requirements
+
+All code must be thoroughly documented following these standards:
+
+### Function Documentation
+- **Every function MUST have a clear docstring** explaining its purpose, parameters, return value, and usage
+- **Include a practical example** showing how to use the function
+- **Document any exceptions** the function might raise
+- **Use English** for all documentation
+
+### Type Annotations
+- **All function arguments MUST have explicit type annotations**
+- **Return types MUST be specified** for all functions
+- **Use Python typing module** for complex types (List, Dict, Optional, etc.)
+
+### Code Language
+- **All code MUST be written in English**
+- **Variable names, function names, and class names** must be in English
+- **Comments and docstrings** must be in English
+
+### Example Documentation Format
+
+```python
+def calculate_word_score(word: str, letter_values: Dict[str, int], word_multiplier: int = 1) -> int:
+    """
+    Calculate the Scrabble score for a given word.
+    
+    Args:
+        word (str): The word to score, must contain only letters
+        letter_values (Dict[str, int]): Dictionary mapping letters to their point values
+        word_multiplier (int, optional): Word multiplier for special squares. Defaults to 1.
+    
+    Returns:
+        int: The total score for the word
+        
+    Raises:
+        ValueError: If word contains non-letter characters
+        
+    Example:
+        >>> letter_values = {'A': 1, 'B': 3, 'C': 3, 'D': 2}
+        >>> calculate_word_score('BAD', letter_values, word_multiplier=2)
+        12  # (3 + 1 + 2) * 2 = 12
+    """
+    if not word.isalpha():
+        raise ValueError(f"Word '{word}' contains non-letter characters")
+    
+    base_score = sum(letter_values.get(letter.upper(), 0) for letter in word)
+    return base_score * word_multiplier
+```
+
+### Class Documentation
+- **Every class MUST have a docstring** explaining its purpose and usage
+- **Document all public methods and properties**
+- **Include usage examples** for complex classes
+
+### Module Documentation
+- **Each Python module MUST have a module docstring** at the top
+- **Explain the module's purpose** and main functionality
+- **List the main classes and functions** exported by the module
+
+### Code Comments
+- **Use inline comments** to explain complex logic
+- **Comment non-obvious decisions** or workarounds
+- **Keep comments concise** but informative
+- **Update comments** when modifying code
+
+These standards ensure code maintainability, readability, and facilitate collaboration.
