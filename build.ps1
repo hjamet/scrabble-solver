@@ -40,9 +40,15 @@ if "$Clean"=="true" (
 REM Create build directory if it doesn't exist
 if not exist build mkdir build
 
-REM Configure CMake
+REM Configure CMake with vcpkg toolchain (if available)
 echo Configuring CMake...
-cmake -B build -DCMAKE_BUILD_TYPE=$Config
+if exist vcpkg (
+    echo Using vcpkg toolchain for dependencies...
+    cmake -B build -DCMAKE_BUILD_TYPE=$Config -DCMAKE_TOOLCHAIN_FILE=%CD%/vcpkg/scripts/buildsystems/vcpkg.cmake
+) else (
+    echo Using system dependencies...
+    cmake -B build -DCMAKE_BUILD_TYPE=$Config
+)
 if errorlevel 1 (
     echo CMake configuration failed
     exit /b 1
@@ -59,6 +65,13 @@ if errorlevel 1 (
 echo.
 echo Build completed successfully!
 echo Executable location: build\$Config\test_main.exe
+
+REM Run tests if requested
+echo.
+echo Running tests...
+cd build
+ctest --output-on-failure
+cd ..
 "@
 
 # Write the temporary batch script

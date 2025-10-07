@@ -142,6 +142,7 @@ The engine implements a clean separation of concerns with the following core str
 - Microsoft Visual C++ Build Tools 2022 (MSVC)
 - CMake 3.16+
 - Git
+- vcpkg (for Google Test dependency)
 
 ### Environment Setup (Windows)
 
@@ -185,14 +186,15 @@ Both commands should display version information without errors.
 git clone https://github.com/your-username/scrabble-solver.git
 cd scrabble-solver
 
+# Install Google Test dependencies
+.\install-gtest.ps1
+
 # Build the C engine (in Developer PowerShell for VS 2022)
-mkdir build
-cd build
-cmake ..
-cmake --build . --config Release
+.\build.ps1
 
 # Run tests
-.\Release\test_main.exe
+cd build
+ctest --output-on-failure
 ```
 
 ### Project Structure
@@ -272,10 +274,19 @@ cmake --build . --config Release
 
 ```powershell
 cd build
-.\Release\test_main.exe
+ctest --output-on-failure
 ```
 
-*Executes the test suite to verify engine functionality.*
+*Executes the complete test suite using CTest with detailed output for failed tests.*
+
+- Run tests with Google Test directly:
+
+```powershell
+cd build
+.\Release\test_main.exe --gtest_output=xml:test_results.xml
+```
+
+*Executes tests directly with Google Test, generating XML reports for CI/CD integration.*
 
 - Clean build:
 
@@ -301,6 +312,11 @@ Remove-Item -Recurse -Force build
 - **Documentation**: Comprehensive inline documentation
 
 ### Testing
+- **Google Test framework** for robust unit testing
+- **Isolated test execution** - each test runs independently
+- **Detailed failure reporting** with clear error messages
+- **CTest integration** for automated test running
+- **XML test reports** for CI/CD integration
 - Unit tests for all core functions
 - Integration tests for engine components
 - Performance benchmarks
