@@ -139,62 +139,53 @@ The engine implements a clean separation of concerns with the following core str
 ## Getting Started
 
 ### Prerequisites
-- Microsoft Visual C++ Build Tools 2022 (MSVC)
-- CMake 3.16+
+- Ubuntu 20.04+ or WSL with Ubuntu
+- GCC/G++ compiler (build-essential package)
+- CMake 3.16+ (automatically downloaded if not available)
 - Git
-- vcpkg (for Google Test dependency)
+- Make (usually included with build-essential)
 
-### Environment Setup (Windows)
+### Environment Setup (Linux/WSL)
 
-For Windows development, we use Microsoft Visual C++ (MSVC) Build Tools for native C++ development.
+This project is designed to run on Linux systems, including WSL (Windows Subsystem for Linux) with Ubuntu.
 
 #### Installation Steps
 
-1. **Download Visual Studio Build Tools 2022**:
-   - Go to [Visual Studio Downloads](https://visualstudio.microsoft.com/fr/downloads/)
-   - Under "Outils pour Visual Studio", download **"Build Tools pour Visual Studio 2022"**
+1. **Update system packages**:
+   ```bash
+   sudo apt update && sudo apt upgrade -y
+   ```
 
-2. **Install Build Tools**:
-   - Run the downloaded installer
-   - In the "Charges de travail" tab, select **"Développement desktop en C++"**
-   - In the right panel, ensure **"CMake C++ pour Windows"** is checked
-   - Click "Installer" to begin installation
+2. **Install build tools and dependencies**:
+   ```bash
+   sudo apt install -y build-essential
+   ```
 
-3. **Use Developer PowerShell**:
-   - **CRITICAL**: Always use **"Developer PowerShell for VS 2022"** from the Start Menu
-   - This terminal automatically configures all necessary environment variables
-   - Do NOT use regular PowerShell or Command Prompt
+3. **Verify installation**:
+   ```bash
+   g++ --version
+   make --version
+   ```
 
-#### Verify Installation
-
-In **"Developer PowerShell for VS 2022"**, run these commands:
-
-```powershell
-# Test MSVC compiler
-cl.exe
-
-# Test CMake
-cmake --version
-```
-
-Both commands should display version information without errors.
+Both commands should display version information without errors. CMake will be automatically downloaded by the build script if needed.
 
 ### Installation
 
-```powershell
+```bash
 # Clone the repository
 git clone https://github.com/your-username/scrabble-solver.git
 cd scrabble-solver
 
-# Install Google Test dependencies
-.\install-gtest.ps1
+# Install dependencies (requires sudo)
+make install-deps
 
-# Build the C engine (in Developer PowerShell for VS 2022)
-.\build.ps1
+# Build and test the project
+make
 
-# Run tests
-cd build
-ctest --output-on-failure
+# Or step by step:
+# make check-deps    # Check if tools are installed
+# make build         # Build the project
+# make test          # Run tests
 ```
 
 ### Project Structure
@@ -207,8 +198,10 @@ scrabble-solver/
 │   ├── engine.h         # Public API interface
 │   └── engine.cpp       # Engine implementation
 ├── tests/               # Test suite
-│   └── test_main.cpp    # Main test executable
+│   ├── test_main.cpp    # Google Test executable
+│   └── simple_test.cpp  # Simple test executable
 ├── build/               # Build artifacts (generated)
+├── Makefile             # Build automation
 ├── CMakeLists.txt       # CMake build configuration
 └── README.md           # This file
 ```
@@ -228,80 +221,147 @@ scrabble-solver/
 - **`CMakeLists.txt`** : Build system configuration
   - *Role* : Defines how to compile the project and its dependencies
   - *Points of attention* : Library linking, compiler flags, test configuration
-  - *Example* : `cmake ..` — *generates build files for MSVC on Windows*
+  - *Example* : `cmake -B build` — *generates build files for GCC on Linux*
 
-- **`tests/test_main.cpp`** : Test executable entry point
-  - *Role* : Main function for running all tests
+- **`tests/simple_test.cpp`** : Simple test executable entry point
+  - *Role* : Main function for running all tests without external dependencies
   - *Usage* : Compile and run to verify engine functionality
-  - *Example* : `.\Release\test_main.exe` — *executes the complete test suite*
+  - *Example* : `./build/simple_test` — *executes the complete test suite*
 
-- **`build.ps1`** : PowerShell build script
-  - *Role* : Automatically configures MSVC environment and builds the project
-  - *Usage* : Run from any PowerShell terminal to compile the project
-  - *Example* : `.\build.ps1` — *configures environment and builds the project*
-  - *Parameters* : `-Clean` for clean build, `-Config Debug` for debug configuration
+- **`Makefile`** : Build automation system
+  - *Role* : Provides targets for building, testing, and managing the project
+  - *Usage* : Use make commands to build, test, and clean the project
+  - *Example* : `make` — *builds the project and runs all tests*
+  - *Available targets* : `make help` — *shows all available commands*
 
 ### Main Commands
 
-- Build the project (recommended method):
+- Build and test the project (recommended method):
 
-```powershell
-.\build.ps1
+```bash
+make
 ```
 
-*Automatically configures MSVC environment and compiles the project using CMake. Works from any PowerShell terminal.*
+*Automatically checks dependencies, builds the project, and runs all tests.*
 
-- Build with clean (removes build directory first):
+- Install system dependencies:
 
-```powershell
-.\build.ps1 -Clean
+```bash
+make install-deps
 ```
 
-*Performs a clean build by removing the build directory before compilation.*
+*Installs build-essential, Google Test, and CMake (requires sudo).*
 
-- Manual build (requires Developer PowerShell for VS 2022):
+- Check project status:
 
-```powershell
-mkdir build
-cd build
-cmake ..
-cmake --build . --config Release
+```bash
+make status
 ```
 
-*Manual compilation method that requires Developer PowerShell for VS 2022.*
+*Shows the status of dependencies and build artifacts.*
 
-- Run tests:
+- Build only:
 
-```powershell
-cd build
-ctest --output-on-failure
+```bash
+make build
 ```
 
-*Executes the complete test suite using CTest with detailed output for failed tests.*
+*Builds the project without running tests.*
 
-- Run tests with Google Test directly:
+- Run tests only:
 
-```powershell
-cd build
-.\Release\test_main.exe --gtest_output=xml:test_results.xml
+```bash
+make test
 ```
 
-*Executes tests directly with Google Test, generating XML reports for CI/CD integration.*
+*Runs the simple test suite.*
 
-- Clean build:
+- Run Google Test (if available):
 
-```powershell
-Remove-Item -Recurse -Force build
+```bash
+make test-gtest
 ```
 
-*Removes all build artifacts for a fresh compilation.*
+*Runs the Google Test suite.*
+
+- Clean build artifacts:
+
+```bash
+make clean
+```
+
+*Removes build directory and temporary files.*
+
+- Show all available commands:
+
+```bash
+make help
+```
+
+*Displays all available make targets with descriptions.*
+
+## Services & Databases
+
+This project is currently a standalone C++ library with no external services or databases. All game state is managed in memory.
+
+## Environment Variables
+
+No environment variables are required for basic operation. The project uses standard C++ compilation with no external configuration needed.
+
+## Guide de déploiement / exécution
+
+### Local Development
+
+1. **Clone and setup**:
+   ```bash
+   git clone https://github.com/your-username/scrabble-solver.git
+   cd scrabble-solver
+   make install-deps  # Install dependencies (requires sudo)
+   ```
+
+2. **Build and test**:
+   ```bash
+   make  # Builds and runs all tests
+   ```
+
+3. **Development workflow**:
+   ```bash
+   make status    # Check project status
+   make build     # Build only
+   make test      # Run tests only
+   make clean     # Clean build artifacts
+   ```
 
 ### Development Workflow
 
 1. **Modify engine code** in `src/engine/`
 2. **Update tests** in `tests/` as needed
-3. **Build and test** using the commands above
+3. **Build and test** using `make`
 4. **Verify functionality** before committing changes
+
+## Changelog sommaire
+
+### Version 1.2.0 - Makefile et Google Test
+- **Ajout** d'un Makefile complet pour l'automatisation du build
+- **Support** de Google Test avec installation automatique
+- **Cibles** multiples : build, test, clean, status, help
+- **Vérification** automatique des dépendances
+- **Suppression** du script bash au profit du Makefile
+- **Amélioration** de l'expérience développeur
+
+### Version 1.1.0 - Migration vers Linux/WSL
+- **Migration complète** de Windows/MSVC vers Linux/GCC
+- **Suppression** des scripts PowerShell (`build.ps1`, `install-gtest.ps1`)
+- **Suppression** des dépendances vcpkg
+- **Création** d'un système de test simple sans dépendances externes
+- **Mise à jour** complète de la documentation pour Linux/WSL
+- **Support** de CMake avec téléchargement automatique si nécessaire
+
+### Version 1.0.0 - Version initiale
+- Implémentation du moteur de base en C++
+- Structure de données pour le plateau de Scrabble
+- Tests unitaires avec Google Test
+- Configuration de build Windows/MSVC
 
 ## Development Guidelines
 

@@ -20,6 +20,10 @@ dist/
 *.so
 *.dll
 *.dylib
+*.a
+simple_test
+cmake-3.27.8-linux-x86_64/
+CMakeLists.txt.backup
 
 # IDE files
 .vscode/
