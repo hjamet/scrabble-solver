@@ -51,12 +51,24 @@ Le projet utilise un mécanisme `do/undo` pour la manipulation de l'état du jeu
 
 ### Core Components
 
-- **`engine/`**: High-performance C library for:
+- **`engine/`**: High-performance C++ library for:
   - Board state representation and manipulation
   - Move generation and validation
   - Score calculation with bonus tiles
   - Position evaluation and ranking
   - Dictionary lookup optimization
+
+### Data Structures
+
+The engine implements a clean separation of concerns with the following core structures:
+
+- **`Bonus` enum class**: Represents special board positions (None, DoubleLetter, TripleLetter, DoubleWord, TripleWord)
+- **`Tile` struct**: Represents a game tile with letter and point value, including support for empty tiles and blanks
+- **`Move` struct**: Encapsulates a complete move with position, orientation, and tiles to place
+- **`Board` class**: Implements the two-level board representation:
+  - Static bonus board (read-only after initialization)
+  - Dynamic tile board (modified during gameplay)
+  - Provides methods for tile placement, retrieval, and position validation
 
 - **`mcts/`**: Monte Carlo Tree Search implementation in C for:
   - Strategic move selection
@@ -74,9 +86,9 @@ Le projet utilise un mécanisme `do/undo` pour la manipulation de l'état du jeu
 ## Development Roadmap
 
 ### Phase 1: Foundation (Current)
-- [ ] Project structure setup
-- [ ] Basic C engine architecture
-- [ ] Core data structures (board, tiles, moves)
+- [x] Project structure setup
+- [x] Basic C++ engine architecture
+- [x] Core data structures (board, tiles, moves)
 - [ ] Dictionary loading and indexing
 
 ### Phase 2: Core Engine
@@ -189,11 +201,11 @@ The project follows a clean, modular architecture:
 
 ```
 scrabble-solver/
-├── src/engine/           # C-based core engine
+├── src/engine/           # C++-based core engine
 │   ├── engine.h         # Public API interface
-│   └── engine.c         # Engine implementation
+│   └── engine.cpp       # Engine implementation
 ├── tests/               # Test suite
-│   └── test_main.c      # Main test executable
+│   └── test_main.cpp    # Main test executable
 ├── build/               # Build artifacts (generated)
 ├── CMakeLists.txt       # CMake build configuration
 └── README.md           # This file
@@ -206,7 +218,7 @@ scrabble-solver/
   - *Usage* : Include this header to use the engine in your code
   - *Example* : `#include "engine.h"` — *provides access to all engine functionality*
 
-- **`src/engine/engine.c`** : Core engine implementation
+- **`src/engine/engine.cpp`** : Core engine implementation
   - *Role* : Contains the actual implementation of all engine functions
   - *Central nodes* : Board representation, move generation, score calculation
   - *Example* : `cmake --build .` — *compiles the engine into a library*
@@ -216,7 +228,7 @@ scrabble-solver/
   - *Points of attention* : Library linking, compiler flags, test configuration
   - *Example* : `cmake ..` — *generates build files for MSVC on Windows*
 
-- **`tests/test_main.c`** : Test executable entry point
+- **`tests/test_main.cpp`** : Test executable entry point
   - *Role* : Main function for running all tests
   - *Usage* : Compile and run to verify engine functionality
   - *Example* : `.\Release\test_main.exe` — *executes the complete test suite*
