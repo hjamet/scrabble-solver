@@ -11,3 +11,4 @@ add_library(engine src/engine/engine.c)
 # Add the test executable
 add_executable(test_main tests/test_main.c)
 target_link_libraries(test_main engine)
+target_include_directories(test_main PRIVATE src/engine)

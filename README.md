@@ -221,9 +221,31 @@ scrabble-solver/
   - *Usage* : Compile and run to verify engine functionality
   - *Example* : `.\Release\test_main.exe` — *executes the complete test suite*
 
+- **`build.ps1`** : PowerShell build script
+  - *Role* : Automatically configures MSVC environment and builds the project
+  - *Usage* : Run from any PowerShell terminal to compile the project
+  - *Example* : `.\build.ps1` — *configures environment and builds the project*
+  - *Parameters* : `-Clean` for clean build, `-Config Debug` for debug configuration
+
 ### Main Commands
 
-- Build the project:
+- Build the project (recommended method):
+
+```powershell
+.\build.ps1
+```
+
+*Automatically configures MSVC environment and compiles the project using CMake. Works from any PowerShell terminal.*
+
+- Build with clean (removes build directory first):
+
+```powershell
+.\build.ps1 -Clean
+```
+
+*Performs a clean build by removing the build directory before compilation.*
+
+- Manual build (requires Developer PowerShell for VS 2022):
 
 ```powershell
 mkdir build
@@ -232,7 +254,7 @@ cmake ..
 cmake --build . --config Release
 ```
 
-*Compiles the engine library and test executable using CMake and MSVC.*
+*Manual compilation method that requires Developer PowerShell for VS 2022.*
 
 - Run tests:
 
