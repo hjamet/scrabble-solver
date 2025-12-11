@@ -1,7 +1,7 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
-#include <cstdint>
+#include <string>
 
 /**
  * Bonus types for special board positions
@@ -18,7 +18,7 @@ enum class Bonus {
  * Represents a tile on the board
  */
 struct Tile {
-    char letter;    // The letter (0 for empty, '*' for blank/joker)
+    char letter;    // The letter (0 for empty, lower case generally used for blank representation in UI but engine standardizes)
     int value;      // Point value of the tile
     
     // Default constructor for empty tile
@@ -30,8 +30,8 @@ struct Tile {
     // Check if tile is empty
     bool isEmpty() const { return letter == 0; }
     
-    // Check if tile is a blank/joker
-    bool isBlank() const { return letter == '*'; }
+    // Check if tile is a blank/joker (represented by value 0 usually, or specific char)
+    bool isBlank() const { return value == 0 && letter != 0; }
 };
 
 /**
@@ -41,11 +41,13 @@ struct Move {
     int row;                    // Starting row (0-14)
     int col;                    // Starting column (0-14)
     bool horizontal;            // true for horizontal, false for vertical
+    std::string word;           // The main word formed
+    int score;                  // Estimated score
     Tile tiles[7];             // Tiles to place (max 7 tiles)
     int tileCount;             // Number of tiles in this move
     
     // Default constructor
-    Move() : row(0), col(0), horizontal(true), tileCount(0) {}
+    Move() : row(0), col(0), horizontal(true), score(0), tileCount(0) {}
 };
 
 /**
