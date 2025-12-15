@@ -85,16 +85,16 @@ To measure the engine's move generation performance:
     ./build/bench
     ```
 
-## 📊 Key Results
-| Metric | Value | Note |
-| :--- | :--- | :--- |
-| **Avg Time / Position** | **2.42 ms** | Includes Move construction |
-| **Moves / Second** | **~412** | Approximate (Position-level) |
-| **Joker Handling** | ✅ Supported | Full recursion |
-| **Dictionary Load** | ~7.4s | Unoptimized GADDAG load |
+## Key Results
 
-*Measured on standard linux dev environment (2025-12-11)*
+| Metric | Our Engine | Quackle (Oracle) | Notes |
+| :--- | :--- | :--- | :--- |
+| **Dictionary Load** | < 100ms | ~100ms | Binary GADDAG format |
+| **Moves Found (Complex)** | 1088 (Rack 2) | 1090 (Rack 2) | 99.8% Accuracy on complex board |
+| **Avg Time/Position** | ~2.0 ms | ~1.4 ms | Scaled to 1000 positions |
 
+> [!NOTE]
+> Detailed walkthrough of the optimization and verification process is available in `walkthrough.md`. Move generation logic has been significantly improved to support full GADDAG traversal (Left & Right), bringing accuracy close to Quackle for many cases.
 
 ## 📂 Project Structure
 ```

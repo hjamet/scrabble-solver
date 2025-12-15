@@ -5,7 +5,7 @@ import sys
 # Configuration
 DICT_PATH = 'assets/dictionnaries/french.txt'
 OUTPUT_PATH = 'assets/benchmarks/synthetic_positions.txt'
-NUM_POSITIONS = 20
+NUM_POSITIONS = 1000
 MOVES_PER_GAME = 15  # Simulate a mid-game state
 
 class Board:

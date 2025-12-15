@@ -19,9 +19,15 @@ namespace Scrabble {
         // 0x3FFFFFF means all letters allowed.
         void computeCrossChecks(const Board& board, const Gaddag& gaddag, uint32_t crossChecks[15][15]) const;
 
-        // Recursive generation function (Gordon's Gen)
+        // Recursive generation function (Rightwards / Standard GoOn)
         void gen(int row, int col, std::string word, const std::vector<char>& rack, 
                  Node* arc, Node* oldArc, int direction, 
+                 const Board& board, const uint32_t crossChecks[15][15], 
+                 std::vector<Move>& moves) const;
+
+        // Recursive generation function (Leftwards for GADDAG)
+        void genLeft(int row, int col, std::string prefix, const std::vector<char>& rack, 
+                 Node* arc, int anchorRow, int anchorCol,
                  const Board& board, const uint32_t crossChecks[15][15], 
                  std::vector<Move>& moves) const;
 

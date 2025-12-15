@@ -64,12 +64,29 @@ int main() {
 
     // 1. Load Dictionary
     std::string dictPath = "assets/dictionnaries/french.txt";
+    std::string binPath = "assets/dictionnaries/french.bin";
     Gaddag gaddag;
+    
     auto tStart = std::chrono::high_resolution_clock::now();
-    if (!gaddag.loadFromFile(dictPath)) {
-        std::cerr << "Failed to load dictionary: " << dictPath << std::endl;
-        return 1;
+    
+    // Try binary load first
+    std::ifstream binFile(binPath);
+    if (binFile.good()) {
+        std::cout << "Found binary dictionary. Loading..." << std::endl;
+        if (!gaddag.loadBinary(binPath)) {
+             std::cerr << "Failed to load binary. Falling back to text." << std::endl;
+             if (!gaddag.loadFromFile(dictPath)) return 1;
+        }
+    } else {
+        std::cout << "Binary dictionary not found. Loading text..." << std::endl;
+        if (!gaddag.loadFromFile(dictPath)) {
+            std::cerr << "Failed to load dictionary: " << dictPath << std::endl;
+            return 1;
+        }
+        std::cout << "Saving binary dictionary for future runs..." << std::endl;
+        gaddag.saveBinary(binPath);
     }
+
     auto tEnd = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(tEnd - tStart).count();
     std::cout << "Dictionary loaded in " << duration << " ms." << std::endl;
@@ -101,6 +118,21 @@ int main() {
 
         tStart = std::chrono::high_resolution_clock::now();
         std::vector<Move> moves = generator.generateMoves(board, rack, gaddag);
+        
+        // Deduplicate moves
+        std::sort(moves.begin(), moves.end(), [](const Move& a, const Move& b) {
+            if (a.row != b.row) return a.row < b.row;
+            if (a.col != b.col) return a.col < b.col;
+            if (a.horizontal != b.horizontal) return a.horizontal < b.horizontal; // false < true
+            return a.word < b.word;
+        });
+        
+        auto last = std::unique(moves.begin(), moves.end(), [](const Move& a, const Move& b) {
+            return a.row == b.row && a.col == b.col && 
+                   a.horizontal == b.horizontal && a.word == b.word;
+        });
+        moves.erase(last, moves.end());
+        
         tEnd = std::chrono::high_resolution_clock::now();
         
         long long us = std::chrono::duration_cast<std::chrono::microseconds>(tEnd - tStart).count();

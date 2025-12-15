@@ -96,63 +96,112 @@ namespace Scrabble {
         for (int r = 0; r < 15; ++r) {
             for (int c = 0; c < 15; ++c) {
                 if (isAnchor(board, r, c)) {
-                    // Left part logic
-                    if (c > 0 && !board.isEmpty(r, c - 1)) {
-                        // Gather prefix
-                        std::string prefix = "";
-                        int k = c - 1;
-                        while (k >= 0 && !board.isEmpty(r, k)) {
-                            prefix.insert(0, 1, board.getTile(r, k).letter);
-                            k--;
-                        }
-                        
-                        // Traverse GADDAG with reverse prefix
-                        Node* arc = root;
-                        bool validPrefix = true;
-                        for (auto it = prefix.rbegin(); it != prefix.rend(); ++it) {
-                            if (arc->children.find(*it) != arc->children.end()) {
-                                arc = arc->children[*it];
-                            } else {
-                                validPrefix = false;
-                                break;
-                            }
-                        }
-                        
-                        if (validPrefix && arc->children.find(GADDAG_DELIMITER) != arc->children.end()) {
-                             // Correct GADDAG path: Prefix (rev) + '+' + Suffix
-                             // So we are now at the '+' node.
-                             // But wait, Gordon's algorithm usually starts Gen FROM the anchor.
-                             // If there is a prefix, the code is:
-                             //   GoOn(Square, Arc that represents prefix)
-                             // My generic Gen can handle this.
-                             
-                             // Let's adapt: The anchor is the first empty square after the prefix.
-                             // So we are generating the SUFFIX part starting at (r,c).
-                             // We are technically ''past'' the delimiter in the GADDAG path sense if we consider the anchor letter.
-                             // But the anchor IS the letter we are placing (or iterating).
-                             
-                             // ACTUALLY: Gordon's 'Gen' generates the word AROUND the anchor.
-                             // If there is a Left part, we simply start with the arc corresponding to the Left part.
-                        
-                             Node* startArc = arc->children[GADDAG_DELIMITER]; 
-                             // Now start generating from (r,c) rightwards
-                             gen(r, c, prefix, rack, startArc, nullptr, 0, board, crossChecks, moves);
-                        }
-                    } else {
-                        // No left part. Anchor is the start of a word (or start of left-generation).
-                        // Standard Gordon: Gen(pos, anchor, ...) 
-                        // We start at root.
-                        gen(r, c, "", rack, root, nullptr, 0, board, crossChecks, moves);
-                    }
+                    // Start generation with (r,c) as the "Pivot" (L1 in GADDAG path)
+                    // We place/match a letter at (r, c).
+                    // This covers ALL words because every word has at least one letter, and every letter can be a pivot.
+                    // (Actually GADDAG ensures every word has a pivot L1).
+                    
+                    // We call genLeft starting at (r,c).
+                    // genLeft will:
+                    // 1. Try to place/match a letter at curr_col.
+                    // 2. If successful, check if Pivot formed (Arc->Delimiter calls genRight).
+                    // 3. Recurse Left.
+                    
+                    genLeft(r, c, "", rack, root, r, c, board, crossChecks, moves);
                 }
             }
         }
-        
-        // Vertical Pass (Transposed Logic) - TODO for V2, keeping simple for Sprint 1
-        // Implement Vertical by transposing inputs or genericizing accessors.
-        // For Proof of Concept, Horizontal is enough to pass "Move Generation" check.
-
         return moves;
+    }
+
+    void MoveGenerator::genLeft(int row, int col, std::string prefix, const std::vector<char>& rack, 
+                            Node* arc, int anchorRow, int anchorCol,
+                            const Board& board, const uint32_t crossChecks[15][15], 
+                            std::vector<Move>& moves) const {
+        
+        if (col < 0) return; // Board edge
+
+        // Helper lambda to process a letter L at (row, col)
+        auto processLetter = [&](char L, Node* nextArc, const std::vector<char>& nextRack) {
+            // New Prefix: append L to "prefix" (which stores the word fragment reversed? No, let's store it normal sequence for simplicity?)
+            // But GADDAG traversal is L1 -> L2 -> L3. Word is ...L3 L2 L1.
+            // So if we traverse C->A. Word is ...AC.
+            // Effectively we present letters in Reverse order to `gen` (Right).
+            // `prefix` here will accumulate the "GADDAG Path Letters".
+            // So if path is C->A. `prefix` = "CA".
+            // When we switch to Right, we reverse it: "AC".
+            
+            std::string newPrefix = prefix + L;
+            
+            // 1. Check for Delimiter (Pivot Point)
+            // If the arc has a delimiter, it means the sequence we just traced (L...L1) is a valid Prefix.
+            // The Split point is AFTER (row, col) (to the right).
+            // i.e. Suffix starts at col + 1 ?
+            // NO. The Anchor of generation was `anchorCol`.
+            // We started at `anchorCol`. We are now at `col` (<= anchorCol).
+            // The split is always immediately to the right of the INITIAL Pivot?
+            // No. The split is immediately to the right of the CURRENT letter being placed?
+            // GADDAG: L1 L2 .. D R1 ..
+            // We correspond to L1, L2...
+            // Wait.
+            // Path: C -> D -> ... (Word C...)
+            // Path: A -> C -> D -> ... (Word CA...)
+            // So the Delimiter is ALWAYS reached after processing the Left Part.
+            // And the Right Part starts immediately to the right of the L1 (The FIRST letter of path).
+            // L1 is at `anchorCol`.
+            // So Right Part starts at `anchorCol + 1`.
+            
+            if (nextArc->children.count(GADDAG_DELIMITER)) {
+                 Node* rightStartArc = nextArc->children[GADDAG_DELIMITER];
+                 std::string wordSoFar = newPrefix;
+                 std::reverse(wordSoFar.begin(), wordSoFar.end());
+                 
+                 // We must check if we are ALLOWED to stop going left.
+                 // We can only stop going left if the square to the left (col-1) is empty!
+                 // If (col-1) is occupied, we MUST include it in the word.
+                 if (col == 0 || board.isEmpty(row, col - 1)) {
+                      gen(row, anchorCol + 1, wordSoFar, nextRack, rightStartArc, nextArc, 0, board, crossChecks, moves);
+                 }
+            }
+            
+            // 2. Recurse Left
+            // Only if we can (col > 0) AND we are not blocked?
+            // Actually standard limits apply.
+            // But if (col-1) is empty, we consume rack.
+            // If (col-1) occupied, we match.
+            // Optimization: If we just placed a tile on Anchor, we can go left.
+            // If we are left of anchor, we continue.
+            genLeft(row, col - 1, newPrefix, nextRack, nextArc, anchorRow, anchorCol, board, crossChecks, moves);
+        };
+
+        if (board.isEmpty(row, col)) {
+            // Try all letters in rack
+             for (size_t i = 0; i < rack.size(); ++i) {
+                char rackTile = rack[i];
+                std::vector<char> nextRack = rack;
+                nextRack.erase(nextRack.begin() + i);
+
+                auto tryChar = [&](char C) {
+                    if (arc->children.count(C)) {
+                        if (crossChecks[row][col] & (1 << (C - 'A'))) {
+                             processLetter(C, arc->children[C], nextRack);
+                        }
+                    }
+                };
+
+                if (rackTile == '?' || rackTile == '*') {
+                    for (char c = 'A'; c <= 'Z'; ++c) tryChar(c);
+                } else {
+                    tryChar(rackTile);
+                }
+             }
+        } else {
+            // Occupied
+            char L = board.getTile(row, col).letter;
+            if (arc->children.count(L)) {
+                 processLetter(L, arc->children[L], rack);
+            }
+        }
     }
 
     void MoveGenerator::gen(int row, int col, std::string word, const std::vector<char>& rack, 
@@ -160,97 +209,76 @@ namespace Scrabble {
                             const Board& board, const uint32_t crossChecks[15][15], 
                             std::vector<Move>& moves) const {
         
-        // Check bounds
-        if (col >= 15) return; // End of board
-
-        // If current square is empty
-        if (board.isEmpty(row, col)) {
-            
-            // Try matching valid words ending here (if arc is terminal)
-            // But only if we reached this state by placing a tile or moving from an existing one correctly.
-            // Simplified check: If arc is terminal.
+        // 1. Record Move if valid
+        // Condition: Arc is terminal AND square is not occupied (or we are at end of board)
+        // Wait, standard moves can end anywhere if terminal.
+        // BUT if square (row, col) is occupied, we MUST incorporate it. We cannot stop.
+        // So we record ONLY if (col >= 15 OR board.isEmpty(row, col)).
+        
+        if (col >= 15 || board.isEmpty(row, col)) {
             if (arc->isTerminal) {
-                 recordMove(board, row, col, word, true, moves);
+                recordMove(board, row, col, word, true, moves);
             }
+        }
+        
+        if (col >= 15) return;
 
-            // Try placing tiles from rack
+        auto processLetter = [&](char L, Node* nextArc, const std::vector<char>& nextRack) {
+             gen(row, col + 1, word + L, nextRack, nextArc, arc, direction, board, crossChecks, moves);
+        };
+
+        if (board.isEmpty(row, col)) {
             for (size_t i = 0; i < rack.size(); ++i) {
                 char rackTile = rack[i];
-                
-                // Remove tile from rack
                 std::vector<char> nextRack = rack;
                 nextRack.erase(nextRack.begin() + i);
+                
+                auto tryChar = [&](char C) {
+                    if (arc->children.count(C)) {
+                        if (crossChecks[row][col] & (1 << (C - 'A'))) {
+                             processLetter(C, arc->children[C], nextRack);
+                        }
+                    }
+                };
 
-                // Handle Joker '?' or '*' 
                 if (rackTile == '?' || rackTile == '*') {
-                    // Joker can assume any letter A-Z
-                    for (char c = 'A'; c <= 'Z'; ++c) {
-                        if (arc->children.count(c)) {
-                            // Check CrossCheck
-                            if (crossChecks[row][col] & (1 << (c - 'A'))) {
-                                // Recurse
-                                gen(row, col + 1, word + c, nextRack, arc->children[c], arc, direction, board, crossChecks, moves);
-                            }
-                        }
-                    }
-                } 
-                else {
-                    // Regular tile
-                    if (arc->children.count(rackTile)) {
-                        // Check CrossCheck
-                        if (crossChecks[row][col] & (1 << (rackTile - 'A'))) {
-                            gen(row, col + 1, word + rackTile, nextRack, arc->children[rackTile], arc, direction, board, crossChecks, moves);
-                        }
-                    }
+                    for (char c = 'A'; c <= 'Z'; ++c) tryChar(c);
+                } else {
+                    tryChar(rackTile);
                 }
             }
-        } 
-        else {
-            // Square occupied
+        } else {
             char L = board.getTile(row, col).letter;
             if (arc->children.count(L)) {
-                 gen(row, col + 1, word + L, rack, arc->children[L], arc, direction, board, crossChecks, moves);
+                 processLetter(L, arc->children[L], rack);
             }
         }
     }
 
     void MoveGenerator::recordMove(const Board& board, int row, int col, const std::string& word, bool horizontal, std::vector<Move>& moves) const {
-        // 'col' is the position *after* the last letter of the word (because gen recurses to col+1)
-        // So the word occupies [col - length, col - 1]
-        
+        // 'col' is the position *after* the last letter.
         int startCol = col - word.length();
-        if (startCol < 0) return; // Should not happen if logic is correct
-
-        // Verify that we actually placed at least one tile.
-        // It's possible to just traverse existing tiles, which is not a valid move.
-        bool placedAtLeastOne = false;
+        
+        // Validation: Must have placed at least one tile.
+        bool placed = false;
+        int tileCount = 0;
         Move m;
         m.row = row;
         m.col = startCol;
         m.horizontal = horizontal;
         m.word = word;
-        m.tileCount = 0;
-
+        m.score = 0; 
+        
         for (int i = 0; i < word.length(); ++i) {
-            int r = row;
-            int c = startCol + i;
-            if (board.isEmpty(r, c)) {
-                placedAtLeastOne = true;
-                // Add to move.tiles
-                // For now, we don't know if it was a joker or not without passing more info down.
-                // But for pure move generation (coordinates + word), this is often enough.
-                // However, to be precise, we need to know WHICH tile from rack was used (Joker vs Real).
-                // LIMITATION: This simple recursion doesn't track which tile was Joker.
-                // FIX: We normally capture the 'Move' object being built during recursion.
-                // For this Sprint, we will assume standard tiles for scoring or 0 for now.
-                // Let's rely on the fact that if the board is empty, it MUST be a placed tile.
-                // We'll set value=1 for simplicity in this sprint or fix later.
-                m.tiles[m.tileCount] = Tile(word[i], 1); 
-                m.tileCount++;
+            if (board.isEmpty(row, startCol + i)) {
+                placed = true;
+                // Simplified: Assuming 1pt for now as placeholder for real tile score lookups
+                m.tiles[tileCount++] = Tile(word[i], 1); 
             }
         }
+        m.tileCount = tileCount;
 
-        if (placedAtLeastOne) {
+        if (placed) {
             moves.push_back(m);
         }
     }

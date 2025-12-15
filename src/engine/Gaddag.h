@@ -34,8 +34,15 @@ namespace Scrabble {
         Gaddag();
         ~Gaddag();
 
+
         // Load dictionary from a file (one word per line)
         bool loadFromFile(const std::string& filePath);
+
+        // Save GADDAG to a binary file for faster loading
+        bool saveBinary(const std::string& filePath);
+        
+        // Load GADDAG from a binary file
+        bool loadBinary(const std::string& filePath);
 
         // Check if the exact path exists (mostly for debugging/verification)
         Node* getRoot() const { return root; }

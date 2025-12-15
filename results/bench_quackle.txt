@@ -1,0 +1,50 @@
+Loading dictionary: assets/dictionnaries/french.gaddag...
+Loading GADDAG content... Version: 1
+interpreter: 0x5aa1899fc2b0
+File pos: 0
+GADDAG content loaded.
+Dictionary loaded in 109 ms.
+Loaded 1000 positions.
+Running Benchmark...
+#    Rack           Moves     Time(us)
+----------------------------------------
+0    NLGIREC        322       987       
+1    SEIEIPN        243       664       
+2    ?LSESUE        1090      3063      
+3    VASUIXC        607       1247      
+4    EKLNIAB        474       1018      
+5    NGEDMNS        303       668       
+6    EONRGEK        192       525       
+7    IACRDNL        445       1092      
+8    ESIUUHE        239       584       
+9    EAVDIUA        481       1053      
+10   MASR?TI        4461      10177     
+11   SZST?EC        1531      5268      
+12   NGSIAAI        251       576       
+13   GTTMT?G        663       1590      
+14   UNLBOMD        176       430       
+15   SEEEPUE        286       642       
+16   OUNOAW?        1323      3343      
+17   EOIRSEA        814       1823      
+18   AESIENL        968       2126      
+19   ?ELMIRA        1390      3781      
+82   SE?MLSP        3648      11950     
+96   RITAF?E        5086      11089     
+193  AYE?O?S        12491     27880     
+240  FLIN?EO        4255      10500     
+266  O?SJI?E        6824      14088     
+400  EM??GQS        7768      13873     
+441  AENES?R        3753      10517     
+501  SRCU?EO        10577     19928     
+517  IVI?EAS        6388      11904     
+583  O?TUCAE        5919      11482     
+673  UEI?TZS        5388      10150     
+707  U?ESBAR        9820      25169     
+799  ?GFH?IU        4784      10273     
+910  ?HOAERI        5857      12457     
+945  ?LPID?D        8072      14927     
+968  ?WDPNU?        4867      10878     
+----------------------------------------
+Total Moves Found: 634249
+Total Time: 1403614 us
+Average Time per Position: 1403.61 us

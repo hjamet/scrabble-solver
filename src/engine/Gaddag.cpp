@@ -1,4 +1,5 @@
 #include "Gaddag.h"
+#include <cstdint>
 
 namespace Scrabble {
 
@@ -82,6 +83,86 @@ namespace Scrabble {
         file.close();
         std::cout << "GADDAG Loaded successfully." << std::endl;
         return true;
+    }
+
+
+    // --- Binary Serialization Helpers ---
+
+    void saveNode(Node* node, std::ofstream& out) {
+        // Format: [char letter] [bool isTerminal] [uint8_t numChildren] [Children...]
+        out.write(&node->letter, sizeof(char));
+        out.write(reinterpret_cast<char*>(&node->isTerminal), sizeof(bool));
+        
+        uint8_t numChildren = (uint8_t)node->children.size();
+        out.write(reinterpret_cast<char*>(&numChildren), sizeof(uint8_t));
+
+        for (auto& pair : node->children) {
+            // Write Child Key (Char)
+            out.write(&pair.first, sizeof(char));
+            // Recursively write child node
+            saveNode(pair.second, out);
+        }
+    }
+
+    Node* loadNode(std::ifstream& in) {
+        char letter;
+        bool isTerminal;
+        uint8_t numChildren;
+
+        in.read(&letter, sizeof(char));
+        in.read(reinterpret_cast<char*>(&isTerminal), sizeof(bool));
+        in.read(reinterpret_cast<char*>(&numChildren), sizeof(uint8_t));
+
+        if (in.fail()) return nullptr;
+
+        Node* node = new Node(letter);
+        node->isTerminal = isTerminal;
+
+        for (int i = 0; i < numChildren; ++i) {
+            char key;
+            in.read(&key, sizeof(char));
+            Node* child = loadNode(in);
+            if (child) {
+                node->children[key] = child;
+            }
+        }
+        return node;
+    }
+
+    bool Gaddag::saveBinary(const std::string& filePath) {
+        std::ofstream file(filePath, std::ios::binary);
+        if (!file.is_open()) {
+            std::cerr << "Error opening file for writing: " << filePath << std::endl;
+            return false;
+        }
+        
+        if (root) {
+            saveNode(root, file);
+        }
+        
+        file.close();
+        std::cout << "GADDAG Saved to binary: " << filePath << std::endl;
+        return true;
+    }
+
+    bool Gaddag::loadBinary(const std::string& filePath) {
+        std::ifstream file(filePath, std::ios::binary);
+        if (!file.is_open()) {
+            std::cerr << "Error opening file for reading: " << filePath << std::endl;
+            return false;
+        }
+
+        // Clean up existing
+        delete root;
+        
+        root = loadNode(file);
+        
+        file.close();
+        if (root) {
+            std::cout << "GADDAG Loaded from binary." << std::endl;
+            return true;
+        }
+        return false;
     }
 
     bool Gaddag::contains(const std::string& word) const {
