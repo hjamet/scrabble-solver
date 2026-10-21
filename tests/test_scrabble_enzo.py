@@ -169,10 +169,10 @@ def test_cross_words_scoring(generator):
     assert m_table.tiles_placed == 4
     assert m_table.score > 0
 
-# Test 14 : Évaluation du reliquat (Leave Evaluation)
+# Test 14 : Évaluation du reliquat (Leave Evaluation - Centrée)
 def test_leave_evaluation():
-    assert evaluate_leave("?S") > 30.0
-    assert evaluate_leave("Q") < -5.0
+    assert evaluate_leave("?S") > 10.0
+    assert evaluate_leave("Q") < -4.0
     # Q avec U annule la pénalité
     assert evaluate_leave("QU") > evaluate_leave("Q")
     # Doublons excessifs pénalisés

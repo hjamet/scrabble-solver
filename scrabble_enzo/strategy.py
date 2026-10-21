@@ -9,13 +9,13 @@ from .board import Board
 from .solver import Move, MoveGenerator
 from .dictionary import ScrabbleDictionary
 
-# 1. Table des valeurs de reliquat unitaire (ODS8 francophone calibré)
+# 1. Table des valeurs de reliquat unitaire (ODS8 francophone calibré - moyenne nulle)
 LEAVE_VALUES = {
-    '?': 25.5, 'S': 7.5, 'E': 2.2, 'R': 2.0, 'I': 1.5, 'N': 1.4,
-    'T': 1.4, 'A': 1.2, 'U': 1.0, 'L': 1.0, 'O': 0.8, 'D': 0.4,
-    'M': 0.3, 'C': 0.3, 'P': 0.1, 'B': -0.5, 'G': -0.6, 'F': -0.8,
-    'H': -1.0, 'V': -1.2, 'J': -1.5, 'Z': 0.5, 'X': 0.8, 'K': -3.5,
-    'W': -4.0, 'Y': -2.5, 'Q': -5.5
+    '?': 9.5, 'S': 3.8, 'E': 0.7, 'R': 0.6, 'I': 0.2, 'N': 0.2,
+    'T': 0.2, 'A': 0.1, 'L': 0.0, 'U': -0.3, 'O': -0.4, 'D': -0.6,
+    'M': -0.6, 'C': -0.5, 'P': -0.8, 'B': -1.2, 'G': -1.3, 'F': -1.5,
+    'H': -1.6, 'V': -1.8, 'J': -2.2, 'Z': -0.5, 'X': -0.3, 'K': -3.2,
+    'W': -3.5, 'Y': -2.5, 'Q': -4.5
 }
 
 VOWELS = set('AEIOUY')
@@ -34,38 +34,37 @@ def evaluate_leave(leave: str) -> float:
         unit_val = LEAVE_VALUES.get(ch, 0.0)
         val += unit_val * cnt
 
-    # 2. Synergie Q + U : annule la pénalité de Q s'il y a un U ou un joker
+    # 2. Synergie Q + U : +3.0 si 'Q' et ('U' ou '?') dans leave
     if 'Q' in counts and ('U' in counts or '?' in counts):
-        val += 4.5
+        val += 3.0
 
-    # 3. Pénalité de doublons
+    # 3. Pénalité de doublons : -1.2*(k-1) hors '?' et 'E' ; -1.0*(k-2) pour 'E' si k>=3
     for ch, cnt in counts.items():
         if ch == '?':
-            if cnt >= 2:
-                val -= 3.0 * (cnt - 1)
+            continue
         elif ch == 'E':
             if cnt >= 3:
-                val -= 1.8 * (cnt - 2)
+                val -= 1.0 * (cnt - 2)
         else:
             if cnt >= 2:
-                val -= 2.2 * (cnt - 1)
+                val -= 1.2 * (cnt - 1)
 
-    # 4. Équilibre Voyelles / Consonnes (sur lettres hors jokers)
+    # 4. Équilibre Voyelles / Consonnes (sur lettres hors jokers) si len >= 3 et diff >= 3
     letters_only = [c for c in leave if c != '?']
-    if letters_only:
+    if len(letters_only) >= 3:
         n_vowels = sum(1 for c in letters_only if c in VOWELS)
         n_consonants = len(letters_only) - n_vowels
         diff = abs(n_vowels - n_consonants)
-        if diff >= 2:
-            val -= 1.2 * (diff - 1) ** 1.5
+        if diff >= 3:
+            val -= 0.8 * (diff - 2)
 
     return round(val, 2)
 
 
 def evaluate_defense_penalty(board: Board, move: Move, bag_count: int) -> float:
-    """Évalue la pénalité défensive : ouverture de MT, MD ou LT à l'adversaire."""
+    """Évalue la pénalité défensive sobre : ouverture directe d'un MT vide à l'adversaire."""
     # Si le sac est vide et que le coup termine la partie, aucun risque défensif
-    if bag_count == 0 and move.tiles_placed >= 7:
+    if bag_count == 0 and (not move.leave or move.tiles_placed >= 7):
         return 0.0
 
     penalty = 0.0
@@ -83,35 +82,14 @@ def evaluate_defense_penalty(board: Board, move: Move, bag_count: int) -> float:
     for pr, pc, pch in placed_coords:
         is_vowel = pch.upper() in VOWELS
 
-        # Vérifier si la lettre posée est adjacente à une case spéciale encore libre
+        # Vérifier si la lettre posée est directement adjacente (Manhattan = 1) à un MT vide
         for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nr, nc = pr + dr, pc + dc
             if 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE:
-                if grid[nr][nc] is None:
-                    bonus = BOARD_BONUS[nr][nc]
-                    if bonus == 'MT':
-                        penalty += 7.5 if is_vowel else 4.5
-                    elif bonus in ('MD', 'LT') and is_vowel:
-                        penalty += 2.0
+                if grid[nr][nc] is None and BOARD_BONUS[nr][nc] == 'MT':
+                    penalty += 2.5 if is_vowel else 1.0
 
-        # Vérifier si elle ouvre une ligne directe vers un MT libre à distance <= 3
-        # Ex. sur la même ligne ou même colonne
-        if move.horizontal:
-            for dist in [1, 2, 3]:
-                for dc in [-dist, dist]:
-                    target_c = pc + dc
-                    if 0 <= target_c < BOARD_SIZE and grid[pr][target_c] is None:
-                        if BOARD_BONUS[pr][target_c] == 'MT':
-                            penalty += 3.0
-        else:
-            for dist in [1, 2, 3]:
-                for dr in [-dist, dist]:
-                    target_r = pr + dr
-                    if 0 <= target_r < BOARD_SIZE and grid[target_r][pc] is None:
-                        if BOARD_BONUS[target_r][pc] == 'MT':
-                            penalty += 3.0
-
-    return round(min(penalty, 25.0), 2)
+    return round(penalty, 2)
 
 
 def solve_endgame_2ply(
@@ -244,13 +222,14 @@ class EnzoStrategist:
         rack: str,
         known_opp_rack: Optional[str] = None,
     ) -> Optional[Move]:
-        bag_count = board.total_remaining_tiles(rack)
-
         # Mode Fin de partie : sac vide et rack adverse connu
-        if bag_count == 0 and known_opp_rack is not None:
+        if known_opp_rack is not None:
             best_m, _ = solve_endgame_2ply(board, rack, known_opp_rack, self.dict, self.gen)
             if best_m is not None:
                 return best_m
+
+        unseen_count = board.total_remaining_tiles(rack)
+        bag_count = max(0, unseen_count - 7)
 
         moves = self.gen.generate_all_moves(board, rack)
         if not moves:
