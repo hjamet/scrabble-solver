@@ -270,7 +270,85 @@ def test_web_api_endpoints(dictionary, generator):
             assert resp.status == 200
             data_train = json.loads(resp.read().decode("utf-8"))
             assert data_train["total"] > 1000
+
+        # Test 4 : POST /api/train (benjamins)
+        req_benj = urllib.request.Request(
+            "http://127.0.0.1:8769/api/train",
+            data=json.dumps({"mode": "benjamins", "query": "TABLE"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req_benj, timeout=3) as resp:
+            assert resp.status == 200
+            data_benj = json.loads(resp.read().decode("utf-8"))
+            assert "benjamins" in data_benj
+            assert len(data_benj["benjamins"]) == 14
+            assert "CARTABLE" in data_benj["benjamins"]
+
+        # Test 5 : POST /api/train (appuis_7_plus_1)
+        req_app = urllib.request.Request(
+            "http://127.0.0.1:8769/api/train",
+            data=json.dumps({"mode": "appuis_7_plus_1", "query": "AELRST"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req_app, timeout=3) as resp:
+            assert resp.status == 200
+            data_app = json.loads(resp.read().decode("utf-8"))
+            assert "appuis" in data_app
+            assert "E" in data_app["appuis"]
+
+        # Test 6 : POST /api/train (anagrams)
+        req_anag = urllib.request.Request(
+            "http://127.0.0.1:8769/api/train",
+            data=json.dumps({"mode": "anagrams", "query": "TIREUR"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req_anag, timeout=3) as resp:
+            assert resp.status == 200
+            data_anag = json.loads(resp.read().decode("utf-8"))
+            assert "anagrams" in data_anag
+            assert "TRIEUR" in data_anag["anagrams"]
     finally:
         server.shutdown()
         server.server_close()
+
+
+# Test 19 : Module CLI (Benjamins, Appuis 7+1, AVO, Solveur)
+def test_cli_benjamins(capsys, dictionary):
+    from scrabble_enzo.cli import format_benjamins
+    format_benjamins(dictionary, "TABLE")
+    captured = capsys.readouterr().out
+    assert "14 solution(s)" in captured
+    assert "CARTABLE" in captured
+    assert "BATTABLE" in captured
+
+
+def test_cli_appuis(capsys, dictionary):
+    from scrabble_enzo.cli import format_appuis
+    format_appuis(dictionary, "AELRST")
+    captured = capsys.readouterr().out
+    assert "Appuis 7+1" in captured
+    assert "+ E" in captured
+
+
+def test_cli_avo(capsys, dictionary):
+    from scrabble_enzo.cli import format_avo
+    format_avo(dictionary, "DEC")
+    captured_dec = capsys.readouterr().out
+    assert "Extensions AVO" in captured_dec
+    assert "mot(s) trouvés" in captured_dec
+
+    format_avo(dictionary, None, top_avo=True)
+    captured_top = capsys.readouterr().out
+    assert "Top 25 des préfixes" in captured_top
+    assert "DES" in captured_top
+
+
+def test_cli_solve(capsys, dictionary, generator):
+    from scrabble_enzo.cli import format_solve
+    format_solve(dictionary, generator, "TIREURS")
+    captured = capsys.readouterr().out
+    assert "DuplicateGreedy" in captured
+    assert "EnzoStrategist" in captured
+    assert "H3 TIREURS" in captured or "H2 TIREURS" in captured
+
 
