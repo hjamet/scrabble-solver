@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scrabble-enzo"
+version = "0.2.0"
+description = "Solveur et entraîneur stratégique de Scrabble ODS8 (Stratégie Anti-Enzo, Endgame 2-plis & Mode AVO)"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.scripts]
+scrabble-enzo-web = "scrabble_enzo.web_app:run_server"
+scrabble-enzo-cli = "scrabble_enzo.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
