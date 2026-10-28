@@ -30,6 +30,7 @@ HTML_PAGE = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scrabble Enzo — Solveur & Moteur Stratégique ODS8</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔠</text></svg>">
     <style>
         :root {
             --bg-dark: #12151c;
@@ -49,18 +50,18 @@ HTML_PAGE = """<!DOCTYPE html>
             --c-ld: #38bdf8;
             --c-normal: #154a32;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding: 16px; display: flex; flex-direction: column; }
-        header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--bg-card); border-radius: 8px; margin-bottom: 16px; border-left: 5px solid var(--accent-gold); }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding: 16px; display: flex; flex-direction: column; margin: 0; overflow-x: hidden; }
+        header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--bg-card); border-radius: 8px; margin: 0 auto 16px auto; max-width: 1360px; width: 100%; border-left: 5px solid var(--accent-gold); }
         h1 { font-size: 1.3rem; font-weight: 700; color: #fff; }
-        .badge { background: #374151; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; color: var(--accent-gold); font-weight: 600; }
-        .main-layout { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: start; }
+        .badge { background: #374151; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; color: var(--accent-gold); font-weight: 600; white-space: nowrap; }
+        .main-layout { max-width: 1360px; width: 100%; margin: 0 auto; padding: 12px 16px; display: grid; grid-template-columns: 520px minmax(0, 1fr); gap: 16px; align-items: start; }
         
         /* Plateau Scrabble */
-        .board-container { background: var(--board-bg); padding: 12px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); user-select: none; }
-        .scrabble-board { display: grid; grid-template-columns: repeat(15, 34px); grid-template-rows: repeat(15, 34px); gap: 2px; }
+        .board-container { background: var(--board-bg); padding: 6px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); user-select: none; width: 520px; }
+        .scrabble-board { display: grid; grid-template-columns: repeat(15, 32px); grid-template-rows: repeat(15, 32px); gap: 2px; }
         .cell {
-            width: 34px; height: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 32px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-size: 10px; font-weight: 700; border-radius: 3px; cursor: pointer; position: relative; transition: transform 0.1s;
         }
         .cell:hover { outline: 2px solid #fff; z-index: 2; }
@@ -77,19 +78,20 @@ HTML_PAGE = """<!DOCTYPE html>
         .cell.preview-tile { background: #a7f3d0 !important; color: #064e3b !important; outline: 2px dashed #059669; }
         
         /* Panneau de Contrôle Latéral */
-        .sidebar { display: flex; flex-direction: column; gap: 16px; }
-        .card { background: var(--bg-card); border-radius: 8px; padding: 14px; border: 1px solid #2d3748; }
+        .sidebar { display: flex; flex-direction: column; gap: 16px; min-width: 0; width: 100%; }
+        .card { background: var(--bg-card); border-radius: 8px; padding: 14px; border: 1px solid #2d3748; min-width: 0; width: 100%; }
         .card h2 { font-size: 1rem; margin-bottom: 10px; color: var(--accent-gold); display: flex; align-items: center; justify-content: space-between; }
         
-        .rack-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        .rack-input-row, .train-input-row { display: flex; gap: 8px; margin-bottom: 10px; width: 100%; }
         input[type="text"] {
             background: #111827; border: 1px solid #374151; color: #fff; padding: 8px 12px; border-radius: 6px;
-            font-size: 1.1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 2px; flex: 1;
+            font-size: 1.1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 2px; flex: 1; min-width: 0;
         }
         input[type="text"]:focus { outline: none; border-color: var(--accent-gold); }
         button {
             background: var(--accent-gold); color: #111; font-weight: 700; border: none; padding: 8px 16px; border-radius: 6px;
-            cursor: pointer; transition: background 0.15s, transform 0.05s; display: inline-flex; align-items: center; gap: 6px;
+            cursor: pointer; transition: background 0.15s, transform 0.05s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            flex-shrink: 0; white-space: nowrap;
         }
         button:hover { background: #d97706; }
         button:active { transform: scale(0.98); }
@@ -97,27 +99,27 @@ HTML_PAGE = """<!DOCTYPE html>
         button.secondary:hover { background: #4b5563; }
         
         /* Résultats */
-        .results-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
-        .results-table th { text-align: left; padding: 6px 8px; background: #111827; color: var(--text-muted); font-size: 0.75rem; }
-        .results-table td { padding: 6px 8px; border-bottom: 1px solid #2d3748; }
+        .results-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; table-layout: auto; }
+        .results-table th { text-align: left; padding: 6px 8px; background: #111827; color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; }
+        .results-table td { padding: 6px 8px; border-bottom: 1px solid #2d3748; white-space: nowrap; }
         .results-table tr:hover { background: var(--bg-card-hover); cursor: pointer; }
         .score-pill { font-weight: 800; color: var(--accent-green); }
         .equity-pill { font-weight: 800; color: var(--accent-gold); }
         
         /* Sac & Statistiques */
-        .bag-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; font-size: 0.75rem; text-align: center; }
-        .bag-item { background: #111827; padding: 4px; border-radius: 4px; border: 1px solid #374151; }
+        .bag-grid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 6px; font-size: 0.75rem; text-align: center; width: 100%; }
+        .bag-item { background: #111827; padding: 4px 2px; border-radius: 4px; border: 1px solid #374151; min-width: 0; }
         .bag-item.empty { opacity: 0.3; }
         .bag-count { font-weight: 700; color: var(--accent-gold); }
 
         /* Onglets d'Entraînement */
-        .tab-buttons { display: flex; gap: 4px; margin-bottom: 10px; }
-        .tab-btn { flex: 1; padding: 6px; font-size: 0.75rem; background: #1f2937; color: var(--text-muted); border: none; border-radius: 4px; cursor: pointer; }
+        .tab-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; width: 100%; }
+        .tab-btn { flex: 1; min-width: 0; padding: 6px 8px; font-size: 0.75rem; background: #1f2937; color: var(--text-muted); border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; text-align: center; }
         .tab-btn.active { background: var(--accent-blue); color: #fff; font-weight: 700; }
         .train-content { display: none; font-size: 0.85rem; max-height: 220px; overflow-y: auto; }
         .train-content.active { display: block; }
-        .pill-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-        .pill { background: #374151; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+        .pill-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .pill, .tag { background: #374151; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; color: #f3f4f6; }
     </style>
 </head>
 <body>
@@ -138,7 +140,7 @@ HTML_PAGE = """<!DOCTYPE html>
             <div class="scrabble-board" id="board"></div>
             <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
                 <button class="secondary" onclick="clearBoard()">Vider le plateau</button>
-                <span style="font-size: 0.8rem; color: #9ca3af;">Clic sur case : poser lettre (maj = jeton, min = joker, espace = vide)</span>
+                <span style="font-size: 0.78rem; color: #9ca3af;">Clic sur case : poser lettre (maj/min/vide)</span>
             </div>
         </div>
 
@@ -178,7 +180,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
             <!-- Décompte du Sac (102 jetons) -->
             <div class="card">
-                <h2>Jetons Non Vus (<span id="total-bag-count">102</span> restants)</h2>
+                <h2><span>Jetons Non Vus (<span id="unseen-count">102</span>)</span></h2>
                 <div class="bag-grid" id="bag-grid"></div>
             </div>
 
@@ -188,34 +190,44 @@ HTML_PAGE = """<!DOCTYPE html>
                 <div class="tab-buttons">
                     <button class="tab-btn active" onclick="switchTab('appuis')">Appuis 7+1</button>
                     <button class="tab-btn" onclick="switchTab('benjamins')">Benjamins (+3)</button>
-                    <button class="tab-btn" onclick="switchTab('avo')">Spécial AVO (TV)</button>
+                    <button class="tab-btn" onclick="switchTab('avo')">Spécial AVO</button>
+                    <button class="tab-btn" onclick="switchTab('anagrams')">Anagrammes</button>
                 </div>
 
                 <!-- Onglet Appuis 7+1 -->
                 <div id="tab-appuis" class="train-content active">
-                    <div style="display: flex; gap: 6px;">
+                    <div class="train-input-row">
                         <input type="text" id="appuis-input" maxlength="7" placeholder="Chevalet 7 let." value="AELRST">
                         <button onclick="searchAppuis()">Chercher</button>
                     </div>
-                    <div id="appuis-results" style="margin-top: 8px;"></div>
+                    <div id="appuis-results" class="train-results" style="margin-top: 8px;"></div>
                 </div>
 
                 <!-- Onglet Benjamins -->
                 <div id="tab-benjamins" class="train-content">
-                    <div style="display: flex; gap: 6px;">
+                    <div class="train-input-row">
                         <input type="text" id="benjamins-input" placeholder="Mot base (ex. TABLE)" value="TABLE">
                         <button onclick="searchBenjamins()">Chercher</button>
                     </div>
-                    <div id="benjamins-results" style="margin-top: 8px;"></div>
+                    <div id="benjamins-results" class="train-results" style="margin-top: 8px;"></div>
                 </div>
 
                 <!-- Onglet AVO -->
                 <div id="tab-avo" class="train-content">
-                    <div style="display: flex; gap: 6px;">
+                    <div class="train-input-row">
                         <input type="text" id="avo-input" maxlength="4" placeholder="Préfixe (ex. DEC)" value="DEC">
                         <button onclick="searchAvo()">Tester</button>
                     </div>
-                    <div id="avo-results" style="margin-top: 8px;"></div>
+                    <div id="avo-results" class="train-results" style="margin-top: 8px;"></div>
+                </div>
+
+                <!-- Onglet Anagrammes -->
+                <div id="tab-anagrams" class="train-content">
+                    <div class="train-input-row">
+                        <input type="text" id="anagrams-input" placeholder="Tirage (ex. TIREUR)" value="TIREUR">
+                        <button onclick="searchAnagrams()">Chercher</button>
+                    </div>
+                    <div id="anagrams-results" class="train-results" style="margin-top: 8px;"></div>
                 </div>
             </div>
         </div>
@@ -325,10 +337,15 @@ HTML_PAGE = """<!DOCTYPE html>
                     <td class="score-pill">+${m.score}</td>
                     <td style="color: #9ca3af;">${m.leave || '—'}</td>
                     <td class="equity-pill">${m.equity > 0 ? '+' : ''}${m.equity}</td>
-                    <td><button style="padding: 2px 6px; font-size: 0.75rem;" onclick="playMove(${idx})">Jouer</button></td>
+                    <td><button style="padding: 2px 8px; font-size: 0.75rem;" onclick="playMove(${idx})">Jouer</button></td>
                 `;
                 tr.onmouseenter = () => previewMove(m);
                 tr.onmouseleave = () => clearPreview();
+                tr.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON') {
+                        previewMove(m);
+                    }
+                };
                 tbody.appendChild(tr);
             });
         }
@@ -377,7 +394,6 @@ HTML_PAGE = """<!DOCTYPE html>
         }
 
         function updateBagCount() {
-            // Décompte local
             fetch('/api/solve', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -388,7 +404,8 @@ HTML_PAGE = """<!DOCTYPE html>
         }
 
         function updateBagDisplay(remMap, total) {
-            document.getElementById('total-bag-count').textContent = total;
+            const countEl = document.getElementById('unseen-count') || document.getElementById('total-bag-count');
+            if (countEl) countEl.textContent = total;
             const container = document.getElementById('bag-grid');
             container.innerHTML = '';
             for (const [ch, cnt] of Object.entries(remMap)) {
@@ -402,8 +419,10 @@ HTML_PAGE = """<!DOCTYPE html>
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.train-content').forEach(c => c.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById(`tab-${tab}`).classList.add('active');
+            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tab));
+            if (btn) btn.classList.add('active');
+            const target = document.getElementById(`tab-${tab}`);
+            if (target) target.classList.add('active');
         }
 
         async function searchAppuis() {
@@ -416,8 +435,8 @@ HTML_PAGE = """<!DOCTYPE html>
             const data = await res.json();
             const div = document.getElementById('appuis-results');
             div.innerHTML = '';
-            for (const [lettre, mots] of Object.entries(data.appuis)) {
-                div.innerHTML += `<div style="margin-top:4px;"><strong>+ ${lettre} :</strong> <span style="color:#10b981;">${mots.join(', ')}</span></div>`;
+            for (const [lettre, mots] of Object.entries(data.appuis || {})) {
+                div.innerHTML += `<div style="margin-top:4px; padding: 2px 0;"><strong>+ ${lettre} :</strong> <span style="color:#10b981; margin-left: 4px;">${mots.join(', ')}</span></div>`;
             }
         }
 
@@ -430,7 +449,12 @@ HTML_PAGE = """<!DOCTYPE html>
             });
             const data = await res.json();
             const div = document.getElementById('benjamins-results');
-            div.innerHTML = `<div class="pill-list">${data.benjamins.map(w => `<span class="pill">${w}</span>`).join('')}</div>`;
+            const items = data.benjamins || [];
+            if (items.length === 0) {
+                div.innerHTML = '<span style="color:#9ca3af;">Aucun benjamin trouvé.</span>';
+                return;
+            }
+            div.innerHTML = `<div class="pill-list">${items.map(w => `<span class="pill tag">${w}</span>`).join(' ')}</div>`;
         }
 
         async function searchAvo() {
@@ -442,7 +466,25 @@ HTML_PAGE = """<!DOCTYPE html>
             });
             const data = await res.json();
             const div = document.getElementById('avo-results');
-            div.innerHTML = `<div>Total prolongements: <strong>${data.total}</strong></div><div class="pill-list">${data.samples.map(w => `<span class="pill">${w}</span>`).join('')}</div>`;
+            const samples = data.samples || [];
+            div.innerHTML = `<div style="margin-bottom: 6px;">Total prolongements: <strong>${data.total || 0}</strong></div><div class="pill-list">${samples.map(w => `<span class="pill tag">${w}</span>`).join(' ')}</div>`;
+        }
+
+        async function searchAnagrams() {
+            const tirage = document.getElementById('anagrams-input').value.trim();
+            const res = await fetch('/api/train', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'anagrams', query: tirage })
+            });
+            const data = await res.json();
+            const div = document.getElementById('anagrams-results');
+            const anags = data.anagrams || [];
+            if (anags.length === 0) {
+                div.innerHTML = '<span style="color:#9ca3af;">Aucune anagramme trouvée.</span>';
+                return;
+            }
+            div.innerHTML = `<div class="pill-list">${anags.map(w => `<span class="pill tag">${w}</span>`).join(' ')}</div>`;
         }
 
         window.onload = initBoard;
@@ -455,6 +497,11 @@ class ScrabbleHTTPHandler(BaseHTTPRequestHandler):
     """Handler HTTP REST JSON et application Web intégrée."""
 
     def do_GET(self) -> None:
+        if self.path == "/favicon.ico":
+            self.send_response(204)
+            self.end_headers()
+            return
+
         if self.path == "/" or self.path.startswith("/index"):
             bonus_json = json.dumps(BOARD_BONUS)
             tile_values_json = json.dumps(TILE_VALUES)
