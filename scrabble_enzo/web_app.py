@@ -57,29 +57,29 @@ HTML_PAGE = """<!DOCTYPE html>
             --c-normal: #154a32;
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding: 16px; display: flex; flex-direction: column; margin: 0; overflow-x: hidden; }
-        header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--bg-card); border-radius: 8px; margin: 0 auto 16px auto; max-width: 1360px; width: 100%; border-left: 5px solid var(--accent-gold); }
-        h1 { font-size: 1.3rem; font-weight: 700; color: #fff; }
+        body { background: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding: 12px 16px; display: flex; flex-direction: column; margin: 0; overflow-x: hidden; box-sizing: border-box; }
+        header, .container { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--bg-card); border-radius: 8px; margin: 0 auto 12px auto; max-width: 1240px; width: 100%; border-left: 5px solid var(--accent-gold); box-sizing: border-box; }
+        h1 { font-size: 1.25rem; font-weight: 700; color: #fff; }
         .badge { background: #374151; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; color: var(--accent-gold); font-weight: 600; white-space: nowrap; }
-        .main-layout { max-width: 1360px; width: 100%; margin: 0 auto; padding: 12px 16px; display: grid; grid-template-columns: 520px minmax(0, 1fr); gap: 16px; align-items: start; }
+        .main-layout, .main-grid { max-width: 1240px; width: 100%; margin: 0 auto; padding: 0 0 16px 0; display: grid; grid-template-columns: 476px minmax(0, 1fr); gap: 16px; align-items: start; box-sizing: border-box; }
         
         /* Plateau Scrabble */
-        .board-container { background: var(--board-bg); padding: 6px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); user-select: none; width: 520px; }
-        .scrabble-board { display: grid; grid-template-columns: repeat(15, 32px); grid-template-rows: repeat(15, 32px); gap: 2px; }
+        .board-container { background: var(--board-bg); padding: 14px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); user-select: none; width: 476px; box-sizing: border-box; }
+        .scrabble-board { display: grid; grid-template-columns: repeat(15, 28px); grid-template-rows: repeat(15, 28px); gap: 2px; }
         .cell {
-            width: 32px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 10px; font-weight: 700; border-radius: 3px; cursor: pointer; position: relative; transition: transform 0.1s;
+            width: 28px; height: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 0.78rem; font-weight: 700; border-radius: 3px; cursor: pointer; position: relative; transition: transform 0.1s;
         }
         .cell:hover { outline: 2px solid #fff; z-index: 2; }
-        .cell.MT { background: var(--c-mt); color: #fff; }
-        .cell.MD { background: var(--c-md); color: #fff; }
-        .cell.LT { background: var(--c-lt); color: #fff; }
-        .cell.LD { background: var(--c-ld); color: #fff; }
+        .cell.MT { background: var(--c-mt); color: #fff; font-size: 9px; }
+        .cell.MD { background: var(--c-md); color: #fff; font-size: 9px; }
+        .cell.LT { background: var(--c-lt); color: #fff; font-size: 9px; }
+        .cell.LD { background: var(--c-ld); color: #fff; font-size: 9px; }
         .cell.normal { background: var(--c-normal); color: #047857; }
         
         .cell.has-tile { background: var(--tile-bg); color: var(--tile-text); border: 1px solid #d97706; }
-        .cell.has-tile .tile-letter { font-size: 16px; font-weight: 900; line-height: 1; }
-        .cell.has-tile .tile-value { font-size: 9px; position: absolute; bottom: 2px; right: 3px; font-weight: 700; color: #4b5563; }
+        .cell.has-tile .tile-letter { font-size: 15px; font-weight: 900; line-height: 1; }
+        .cell.has-tile .tile-value { font-size: 8px; position: absolute; bottom: 1px; right: 2px; font-weight: 700; color: #4b5563; }
         .cell.is-joker .tile-letter { color: #dc2626; }
         .cell.preview-tile { background: #a7f3d0 !important; color: #064e3b !important; outline: 2px dashed #059669; }
         .cell.selected { outline: 3px solid var(--accent-gold) !important; z-index: 5; }
@@ -95,15 +95,24 @@ HTML_PAGE = """<!DOCTYPE html>
         
         /* Panneau de Contrôle Latéral */
         .sidebar { display: flex; flex-direction: column; gap: 16px; min-width: 0; width: 100%; }
-        .card { background: var(--bg-card); border-radius: 8px; padding: 14px; border: 1px solid #2d3748; min-width: 0; width: 100%; }
+        .card { background: var(--bg-card); border-radius: 8px; padding: 14px; border: 1px solid #2d3748; min-width: 0; width: 100%; box-sizing: border-box; }
         .card h2 { font-size: 1rem; margin-bottom: 10px; color: var(--accent-gold); display: flex; align-items: center; justify-content: space-between; }
         
         .rack-input-row, .train-input-row { display: flex; gap: 8px; margin-bottom: 10px; width: 100%; }
         input[type="text"] {
-            background: #111827; border: 1px solid #374151; color: #fff; padding: 8px 12px; border-radius: 6px;
-            font-size: 1.1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 2px; flex: 1; min-width: 0;
+            background: #111827; border: 1px solid #374151; color: #fff; padding: 6px 10px; border-radius: 6px;
+            font-size: 0.9rem; text-transform: uppercase; font-weight: 600; flex: 1; min-width: 0; box-sizing: border-box;
         }
         input[type="text"]:focus { outline: none; border-color: var(--accent-gold); }
+        #rack-input {
+            font-size: 1.25rem; font-weight: 800; letter-spacing: 3px; padding: 8px 12px;
+        }
+        #opp-coord {
+            width: 85px; flex: 0 0 85px; font-size: 0.85rem; letter-spacing: normal; padding: 6px 8px; text-transform: uppercase;
+        }
+        #opp-word {
+            flex: 1; min-width: 110px; font-size: 0.85rem; letter-spacing: normal; padding: 6px 8px; text-transform: uppercase;
+        }
         button {
             background: var(--accent-gold); color: #111; font-weight: 700; border: none; padding: 8px 16px; border-radius: 6px;
             cursor: pointer; transition: background 0.15s, transform 0.05s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -152,7 +161,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
     <div class="main-layout">
         <!-- Colonne Gauche : Plateau & Scoreboard -->
-        <div class="left-col" style="display: flex; flex-direction: column; gap: 14px; width: 520px; min-width: 0;">
+        <div class="left-col" style="display: flex; flex-direction: column; gap: 14px; width: 476px; min-width: 0;">
             <div class="board-container">
                 <div class="scrabble-board" id="board"></div>
                 <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
@@ -170,8 +179,8 @@ HTML_PAGE = """<!DOCTYPE html>
                     <div style="color: var(--accent-gold);">Écart : <span id="score-diff">+0</span></div>
                 </div>
                 <div style="display: flex; gap: 6px; margin-bottom: 6px;">
-                    <input type="text" id="opp-coord" placeholder="Coord (ex: 8D)" style="width: 110px; flex: initial;" maxlength="4">
-                    <input type="text" id="opp-word" placeholder="Mot d'Enzo (ex: MAJEURS)" style="flex: 1;">
+                    <input type="text" id="opp-coord" placeholder="Ex: 8D" maxlength="4">
+                    <input type="text" id="opp-word" placeholder="Mot d'Enzo">
                     <button onclick="playOpponentMove()">➕ Poser coup</button>
                     <button id="btn-undo" class="secondary" onclick="undoLastAction()">↩️ Annuler</button>
                 </div>
@@ -527,9 +536,11 @@ HTML_PAGE = """<!DOCTYPE html>
                 html += `<div style="background: rgba(59, 130, 246, 0.2); border: 1px solid var(--accent-blue); padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.82rem; color: #93c5fd;">🔍 <strong>Fin de partie (Sac vide)</strong> — Chevalet déduit d'Enzo : <b>${data.deduced_opp_rack}</b> (Solveur exact 2-plis actif)</div>`;
             }
             if (data.best_exchange) {
-                const topEquity = (data.moves && data.moves.length > 0) ? data.moves[0].equity : -9999;
+                const topEquity = (data.moves && data.moves.length > 0)
+                    ? Math.max(...data.moves.map(m => m.equity))
+                    : -9999;
                 if (topEquity < data.best_exchange.equity || !data.moves || data.moves.length === 0) {
-                    html += `<div style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--accent-gold); padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.82rem; color: #fde68a;">💡 <strong>Conseil Stratégique :</strong> Échanger <b>${data.best_exchange.dump}</b> (garder <b>${data.best_exchange.keep || 'rien'}</b>, équité ${data.best_exchange.equity > 0 ? '+' : ''}${data.best_exchange.equity}) — Meilleur coup plateau : ${topEquity > -999 ? topEquity : 'aucun'}</div>`;
+                    html += `<div style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--accent-gold); padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.82rem; color: #fde68a;">💡 <strong>Conseil Stratégique :</strong> Échanger <b>${data.best_exchange.dump}</b> (garder <b>${data.best_exchange.keep || 'rien'}</b>, équité ${data.best_exchange.equity > 0 ? '+' : ''}${data.best_exchange.equity}) — Meilleur coup plateau : ${topEquity > -999 ? (topEquity > 0 ? '+' : '') + topEquity : 'aucun'}</div>`;
                 }
             }
             banner.innerHTML = html;
@@ -842,6 +853,8 @@ class ScrabbleHTTPHandler(BaseHTTPRequestHandler):
                     "equity": m.equity,
                     "cross_words": m.cross_words,
                 })
+
+            moves_out.sort(key=lambda item: item["equity"], reverse=True)
 
             response_data = {
                 "moves": moves_out,
