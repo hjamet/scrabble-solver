@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 import collections
+import itertools
 import random
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from .constants import BOARD_SIZE, TILE_VALUES, BOARD_BONUS, tile_value
 from .board import Board
 from .solver import Move, MoveGenerator
@@ -59,6 +60,46 @@ def evaluate_leave(leave: str) -> float:
             val -= 0.8 * (diff - 2)
 
     return round(val, 2)
+
+
+def evaluate_best_exchange(rack: str, bag_count: int) -> Optional[Dict[str, Any]]:
+    """Évalue le meilleur échange de lettres possible (dump) pour maximiser la valeur du reliquat gardé (keep)."""
+    if bag_count < 7 or not rack or not rack.strip():
+        return None
+
+    rack = rack.strip().upper()
+    rack_len = len(rack)
+    if rack_len == 0:
+        return None
+
+    seen_keeps = set()
+    best_lv = -9999.0
+    best_keep = ""
+    best_dump = rack
+
+    # Énumérer toutes les tailles de keep de 0 à rack_len - 1
+    for k in range(rack_len):
+        for comb in itertools.combinations(rack, k):
+            keep = "".join(sorted(comb))
+            if keep in seen_keeps:
+                continue
+            seen_keeps.add(keep)
+
+            lv = evaluate_leave(keep)
+            if lv > best_lv:
+                best_lv = lv
+                best_keep = keep
+                dump_counts = collections.Counter(rack)
+                for ch in keep:
+                    dump_counts[ch] -= 1
+                best_dump = "".join(sorted(dump_counts.elements()))
+
+    return {
+        "keep": best_keep,
+        "dump": best_dump,
+        "leave_value": round(best_lv, 2),
+        "equity": round(best_lv - 6.0, 2),
+    }
 
 
 def evaluate_defense_penalty(board: Board, move: Move, bag_count: int) -> float:

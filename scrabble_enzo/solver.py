@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import List, Dict, Set, Tuple, Optional
+from typing import List, Dict, Set, Tuple, Optional, Any
 import collections
 from .constants import BOARD_SIZE, CENTER_ROW, CENTER_COL, BINGO_BONUS, BOARD_BONUS, TILE_VALUES, tile_value
 from .board import Board
@@ -409,3 +409,224 @@ class MoveGenerator:
             final_score += BINGO_BONUS
 
         return final_score, cross_words
+
+
+def parse_fisf_coord(coord: str) -> Tuple[int, int, bool]:
+    """Parse une coordonnée FISF (ex: 'H4', '12H', '8D') en (row, col, horizontal)."""
+    c = coord.strip().upper()
+    if not c or len(c) < 2:
+        raise ValueError(f"Coordonnée FISF invalide : {coord}")
+
+    # Cas 1 : Horizontal (ex: H4, H12, O15) -> commence par lettre A-O, suivi de 1-15
+    if 'A' <= c[0] <= 'O':
+        row = ord(c[0]) - ord('A')
+        num_part = c[1:]
+        if not num_part.isdigit():
+            raise ValueError(f"Coordonnée FISF invalide : {coord}")
+        col_1based = int(num_part)
+        if not (1 <= col_1based <= 15):
+            raise ValueError(f"Coordonnée FISF invalide : {coord}")
+        return row, col_1based - 1, True
+
+    # Cas 2 : Vertical (ex: 4H, 12H, 15O) -> commence par 1-15, se termine par lettre A-O
+    if 'A' <= c[-1] <= 'O':
+        row = ord(c[-1]) - ord('A')
+        num_part = c[:-1]
+        if not num_part.isdigit():
+            raise ValueError(f"Coordonnée FISF invalide : {coord}")
+        col_1based = int(num_part)
+        if not (1 <= col_1based <= 15):
+            raise ValueError(f"Coordonnée FISF invalide : {coord}")
+        return row, col_1based - 1, False
+
+    raise ValueError(f"Coordonnée FISF invalide : {coord}")
+
+
+def place_and_score_move(
+    board: Board,
+    dictionary: ScrabbleDictionary,
+    coord_str: str,
+    word: str,
+) -> Dict[str, Any]:
+    """Valide et score un coup joué sur la grille selon les règles officielles du Scrabble."""
+    row, col, horizontal = parse_fisf_coord(coord_str)
+    word = word.strip()
+    if len(word) < 2:
+        raise ValueError("Le mot doit comporter au moins 2 lettres.")
+
+    # Vérification des dimensions de la grille
+    if horizontal:
+        if col + len(word) > BOARD_SIZE:
+            raise ValueError(f"Le mot '{word}' déborde de la grille horizontalement depuis la colonne {col+1}.")
+    else:
+        if row + len(word) > BOARD_SIZE:
+            raise ValueError(f"Le mot '{word}' déborde de la grille verticalement depuis la ligne {chr(65+row)}.")
+
+    placed_tiles: List[Tuple[int, int, str]] = []
+    main_word_letters: List[Tuple[int, int, str]] = []
+
+    for i, ch in enumerate(word):
+        r = row if horizontal else row + i
+        c = col + i if horizontal else col
+        existing = board.grid[r][c]
+        if existing is not None:
+            if existing.upper() != ch.upper():
+                raise ValueError(
+                    f"Conflit en case ({chr(65+r)}{c+1}) : la case contient déjà '{existing}', le mot propose '{ch}'."
+                )
+            main_word_letters.append((r, c, existing))
+        else:
+            placed_tiles.append((r, c, ch))
+            main_word_letters.append((r, c, ch))
+
+    if len(placed_tiles) == 0:
+        raise ValueError("Aucune nouvelle lettre posée sur le plateau.")
+
+    # Extension du mot principal aux lettres déjà présentes immédiatement en amont et en aval
+    pre_tiles: List[Tuple[int, int, str]] = []
+    if horizontal:
+        curr_c = col - 1
+        while curr_c >= 0 and board.grid[row][curr_c] is not None:
+            pre_tiles.append((row, curr_c, board.grid[row][curr_c]))
+            curr_c -= 1
+        pre_tiles.reverse()
+    else:
+        curr_r = row - 1
+        while curr_r >= 0 and board.grid[curr_r][col] is not None:
+            pre_tiles.append((curr_r, col, board.grid[curr_r][col]))
+            curr_r -= 1
+        pre_tiles.reverse()
+
+    post_tiles: List[Tuple[int, int, str]] = []
+    if horizontal:
+        curr_c = col + len(word)
+        while curr_c < BOARD_SIZE and board.grid[row][curr_c] is not None:
+            post_tiles.append((row, curr_c, board.grid[row][curr_c]))
+            curr_c += 1
+    else:
+        curr_r = row + len(word)
+        while curr_r < BOARD_SIZE and board.grid[curr_r][col] is not None:
+            post_tiles.append((curr_r, col, board.grid[curr_r][col]))
+            curr_r += 1
+
+    full_main_tiles = pre_tiles + main_word_letters + post_tiles
+    full_main_word = "".join(t[2] for t in full_main_tiles).upper()
+    formed_words: List[str] = [full_main_word]
+
+    # Calcul du score du mot principal
+    placed_set = {(pr, pc): pch for pr, pc, pch in placed_tiles}
+    main_word_score = 0
+    word_mult = 1
+
+    for r, c, ch in full_main_tiles:
+        base_val = 0 if ch.islower() else TILE_VALUES.get(ch.upper(), 0)
+        if (r, c) in placed_set:
+            bonus = BOARD_BONUS[r][c]
+            let_mult = 1
+            if bonus == 'LD':
+                let_mult = 2
+            elif bonus == 'LT':
+                let_mult = 3
+            elif bonus == 'MD':
+                word_mult *= 2
+            elif bonus == 'MT':
+                word_mult *= 3
+            main_word_score += base_val * let_mult
+        else:
+            main_word_score += base_val
+
+    total_main_score = main_word_score * word_mult
+
+    # Calcul des mots croisés perpendiculaires formés par chaque lettre nouvellement posée
+    cross_total_score = 0
+    for pr, pc, pch in placed_tiles:
+        base_val = 0 if pch.islower() else TILE_VALUES.get(pch.upper(), 0)
+        bonus = BOARD_BONUS[pr][pc]
+        let_mult = 1
+        cw_mult = 1
+        if bonus == 'LD':
+            let_mult = 2
+        elif bonus == 'LT':
+            let_mult = 3
+        elif bonus == 'MD':
+            cw_mult = 2
+        elif bonus == 'MT':
+            cw_mult = 3
+
+        if horizontal:
+            # Axe perpendiculaire = vertical (haut et bas)
+            up_tiles: List[Tuple[int, int, str]] = []
+            curr_r = pr - 1
+            while curr_r >= 0 and board.grid[curr_r][pc] is not None:
+                up_tiles.append((curr_r, pc, board.grid[curr_r][pc]))
+                curr_r -= 1
+            up_tiles.reverse()
+
+            down_tiles: List[Tuple[int, int, str]] = []
+            curr_r = pr + 1
+            while curr_r < BOARD_SIZE and board.grid[curr_r][pc] is not None:
+                down_tiles.append((curr_r, pc, board.grid[curr_r][pc]))
+                curr_r += 1
+
+            if up_tiles or down_tiles:
+                cw_all = up_tiles + [(pr, pc, pch)] + down_tiles
+                cw_word = "".join(t[2] for t in cw_all).upper()
+                formed_words.append(cw_word)
+                cw_score = base_val * let_mult
+                for ur, uc, uch in up_tiles + down_tiles:
+                    cw_score += 0 if uch.islower() else TILE_VALUES.get(uch.upper(), 0)
+                cross_total_score += cw_score * cw_mult
+
+        else:
+            # Axe perpendiculaire = horizontal (gauche et droite)
+            left_tiles: List[Tuple[int, int, str]] = []
+            curr_c = pc - 1
+            while curr_c >= 0 and board.grid[pr][curr_c] is not None:
+                left_tiles.append((pr, curr_c, board.grid[pr][curr_c]))
+                curr_c -= 1
+            left_tiles.reverse()
+
+            right_tiles: List[Tuple[int, int, str]] = []
+            curr_c = pc + 1
+            while curr_c < BOARD_SIZE and board.grid[pr][curr_c] is not None:
+                right_tiles.append((pr, curr_c, board.grid[pr][curr_c]))
+                curr_c += 1
+
+            if left_tiles or right_tiles:
+                cw_all = left_tiles + [(pr, pc, pch)] + right_tiles
+                cw_word = "".join(t[2] for t in cw_all).upper()
+                formed_words.append(cw_word)
+                cw_score = base_val * let_mult
+                for lr, lc, lch in left_tiles + right_tiles:
+                    cw_score += 0 if lch.islower() else TILE_VALUES.get(lch.upper(), 0)
+                cross_total_score += cw_score * cw_mult
+
+    total_score = total_main_score + cross_total_score
+    if len(placed_tiles) == 7:
+        total_score += BINGO_BONUS
+
+    # Validation ODS8
+    invalid_words = [w for w in formed_words if not dictionary.is_word(w)]
+    valid_ods8 = (len(invalid_words) == 0)
+
+    # Application des tuiles posées sur un nouveau plateau
+    new_board = board.copy()
+    for pr, pc, pch in placed_tiles:
+        new_board.set_tile(pr, pc, pch)
+
+    coord_canon = f"{chr(65 + row)}{col + 1}" if horizontal else f"{col + 1}{chr(65 + row)}"
+
+    return {
+        "valid_ods8": valid_ods8,
+        "invalid_words": invalid_words,
+        "formed_words": formed_words,
+        "score": total_score,
+        "placed_count": len(placed_tiles),
+        "coord": coord_canon,
+        "word": word,
+        "row": row,
+        "col": col,
+        "horizontal": horizontal,
+        "grid": new_board.to_dict(),
+    }
+

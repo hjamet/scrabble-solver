@@ -11,13 +11,14 @@ from scrabble_enzo.constants import (
 )
 from scrabble_enzo.board import Board
 from scrabble_enzo.dictionary import ScrabbleDictionary
-from scrabble_enzo.solver import MoveGenerator, Move
+from scrabble_enzo.solver import MoveGenerator, Move, parse_fisf_coord, place_and_score_move
 from scrabble_enzo.strategy import (
     evaluate_leave,
     evaluate_defense_penalty,
     solve_endgame_2ply,
     DuplicateGreedy,
     EnzoStrategist,
+    evaluate_best_exchange,
 )
 
 @pytest.fixture(scope="module")
@@ -350,5 +351,120 @@ def test_cli_solve(capsys, dictionary, generator):
     assert "DuplicateGreedy" in captured
     assert "EnzoStrategist" in captured
     assert "H3 TIREURS" in captured or "H2 TIREURS" in captured
+
+
+def test_parse_fisf_coord():
+    assert parse_fisf_coord("H4") == (7, 3, True)
+    assert parse_fisf_coord("4H") == (7, 3, False)
+    assert parse_fisf_coord("H12") == (7, 11, True)
+    assert parse_fisf_coord("12H") == (7, 11, False)
+    assert parse_fisf_coord("O15") == (14, 14, True)
+    assert parse_fisf_coord("15O") == (14, 14, False)
+
+    with pytest.raises(ValueError):
+        parse_fisf_coord("P4")
+    with pytest.raises(ValueError):
+        parse_fisf_coord("H16")
+    with pytest.raises(ValueError):
+        parse_fisf_coord("XYZ")
+    with pytest.raises(ValueError):
+        parse_fisf_coord("")
+
+
+def test_place_and_score_move(dictionary):
+    b = Board()
+    # Coup initial valide en H8 au centre (EAU = 3 pts * 2 MD = 6 pts)
+    res = place_and_score_move(b, dictionary, "H8", "EAU")
+    assert res["valid_ods8"] is True
+    assert res["invalid_words"] == []
+    assert res["formed_words"] == ["EAU"]
+    assert res["score"] == 6
+    assert res["placed_count"] == 3
+    assert res["coord"] == "H8"
+
+    # Poser le coup sur le plateau
+    b2 = Board.from_dict(res["grid"])
+
+    # Coup avec mot invalide (contestation ODS8)
+    res_fake = place_and_score_move(b2, dictionary, "8D", "XYZ")
+    assert res_fake["valid_ods8"] is False
+    assert "XYZ" in res_fake["invalid_words"]
+    assert res_fake["score"] > 0
+
+    # Mot avec joker minuscule ('e') valant 0 pt
+    res_joker = place_and_score_move(b, dictionary, "H8", "eAU")
+    assert res_joker["score"] == 4  # (0 + 1 + 1) * 2
+
+    # Mots croisés perpendiculaires :
+    # Sur b2 ("EAU" posé en H8, cols 7..9, row 7), poser "AVION" verticalement en 8H (croisant le A en (7, 8))
+    # EAU : E=(7,7), A=(7,8), U=(7,9).
+    # On pose verticalement en 8G (row 6..10, col 8) : P-A-R-I-S ou semblable
+    # Ici "AVION" commençant en G (row 6) : G9 = row 6 col 8 ?
+    # 9G = col 8 (9e colonne), row 6 (G). Mot = "AVION" -> A en (6,8), V en (7,8) -> conflit si EAU a A en (7,8) !
+    # Dans EAU, lettres : (7,7)=E, (7,8)=A, (7,9)=U.
+    # Pour croiser en A en (7,8) : mot vertical "BATEAU" commençant en 9F (row 5 col 8) -> B=(5,8), A=(6,8), T=(7,8) conflit !
+    # Pour avoir A en 2e lettre : "RATE" commençant en 9G (row 6 col 8) : R=(6,8), A=(7,8), T=(8,8), E=(9,8).
+    res_cross = place_and_score_move(b2, dictionary, "9G", "RATE")
+    assert res_cross["valid_ods8"] is True
+    assert "RATE" in res_cross["formed_words"]
+    assert res_cross["placed_count"] == 3  # R, T, E posés, A déjà présent
+    assert res_cross["score"] > 0
+
+
+def test_evaluate_best_exchange():
+    # Mauvais tirage (plusieurs Q sans U) : dump des Q
+    ex_q = evaluate_best_exchange("QQQQE", bag_count=20)
+    assert ex_q is not None
+    assert "Q" in ex_q["dump"]
+    assert ex_q["keep"] == "E"
+
+    # Sac trop vide (< 7)
+    assert evaluate_best_exchange("ABCDEFG", bag_count=5) is None
+    assert evaluate_best_exchange("", bag_count=20) is None
+
+
+def test_web_api_play_move_endpoint():
+    import threading, urllib.request, json
+    from http.server import HTTPServer
+    from scrabble_enzo.web_app import ScrabbleHTTPHandler, get_shared_engine
+
+    get_shared_engine()
+    server = HTTPServer(("127.0.0.1", 8770), ScrabbleHTTPHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    try:
+        # POST /api/play_move avec coup valide
+        payload_valid = json.dumps({"grid": None, "coord": "H8", "word": "EAU"}).encode("utf-8")
+        req = urllib.request.Request(
+            "http://127.0.0.1:8770/api/play_move",
+            data=payload_valid,
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            assert resp.status == 200
+            data = json.loads(resp.read().decode("utf-8"))
+            assert data["valid_ods8"] is True
+            assert data["score"] == 6
+            assert data["grid"] is not None
+
+        # POST /api/play_move avec coup invalide (débordement)
+        payload_invalid = json.dumps({"grid": None, "coord": "H14", "word": "SCRABBLE"}).encode("utf-8")
+        req_inv = urllib.request.Request(
+            "http://127.0.0.1:8770/api/play_move",
+            data=payload_invalid,
+            headers={"Content-Type": "application/json"}
+        )
+        try:
+            with urllib.request.urlopen(req_inv, timeout=5) as resp_inv:
+                pass
+        except urllib.error.HTTPError as e:
+            assert e.code == 400
+            err_data = json.loads(e.read().decode("utf-8"))
+            assert "error" in err_data
+    finally:
+        server.shutdown()
+        server.server_close()
+
 
 

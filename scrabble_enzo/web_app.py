@@ -9,8 +9,14 @@ from typing import Dict, Any, List
 from .constants import BOARD_SIZE, BOARD_BONUS, TILE_COUNTS, TILE_VALUES, tile_value
 from .board import Board
 from .dictionary import ScrabbleDictionary
-from .solver import MoveGenerator, Move
-from .strategy import EnzoStrategist, evaluate_leave, evaluate_defense_penalty, solve_endgame_2ply
+from .solver import MoveGenerator, Move, place_and_score_move
+from .strategy import (
+    EnzoStrategist,
+    evaluate_leave,
+    evaluate_defense_penalty,
+    solve_endgame_2ply,
+    evaluate_best_exchange,
+)
 
 # Instance globale partagée du dictionnaire et du solveur
 _GLOBAL_DICT: ScrabbleDictionary | None = None
@@ -76,6 +82,16 @@ HTML_PAGE = """<!DOCTYPE html>
         .cell.has-tile .tile-value { font-size: 9px; position: absolute; bottom: 2px; right: 3px; font-weight: 700; color: #4b5563; }
         .cell.is-joker .tile-letter { color: #dc2626; }
         .cell.preview-tile { background: #a7f3d0 !important; color: #064e3b !important; outline: 2px dashed #059669; }
+        .cell.selected { outline: 3px solid var(--accent-gold) !important; z-index: 5; }
+        .cell.selected::after {
+            content: var(--direction-arrow, '→');
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            font-size: 8px;
+            color: var(--accent-gold);
+            font-weight: 900;
+        }
         
         /* Panneau de Contrôle Latéral */
         .sidebar { display: flex; flex-direction: column; gap: 16px; min-width: 0; width: 100%; }
@@ -135,12 +151,31 @@ HTML_PAGE = """<!DOCTYPE html>
     </header>
 
     <div class="main-layout">
-        <!-- Plateau -->
-        <div class="board-container">
-            <div class="scrabble-board" id="board"></div>
-            <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <button class="secondary" onclick="clearBoard()">Vider le plateau</button>
-                <span style="font-size: 0.78rem; color: #9ca3af;">Clic sur case : poser lettre (maj/min/vide)</span>
+        <!-- Colonne Gauche : Plateau & Scoreboard -->
+        <div class="left-col" style="display: flex; flex-direction: column; gap: 14px; width: 520px; min-width: 0;">
+            <div class="board-container">
+                <div class="scrabble-board" id="board"></div>
+                <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <button class="secondary" onclick="clearBoard()">Vider le plateau</button>
+                    <span style="font-size: 0.78rem; color: #9ca3af;">Clavier direct (Shift=joker, Espace=dir)</span>
+                </div>
+            </div>
+
+            <!-- Scoreboard en direct & Coup adverse (Nous vs Enzo & Loïc) -->
+            <div class="card">
+                <h2><span>Scoreboard & Coup Adverse</span><span class="badge" style="font-size:0.7rem; padding:2px 8px;">En direct</span></h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #111827; padding: 8px 12px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; margin-bottom: 10px;">
+                    <div style="color: var(--accent-green);">Nous : <span id="score-us">0</span> pts</div>
+                    <div style="color: var(--c-md);">Enzo & Loïc : <span id="score-opp">0</span> pts</div>
+                    <div style="color: var(--accent-gold);">Écart : <span id="score-diff">+0</span></div>
+                </div>
+                <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                    <input type="text" id="opp-coord" placeholder="Coord (ex: 8D)" style="width: 110px; flex: initial;" maxlength="4">
+                    <input type="text" id="opp-word" placeholder="Mot d'Enzo (ex: MAJEURS)" style="flex: 1;">
+                    <button onclick="playOpponentMove()">➕ Poser coup</button>
+                    <button id="btn-undo" class="secondary" onclick="undoLastAction()">↩️ Annuler</button>
+                </div>
+                <div id="move-alert"></div>
             </div>
         </div>
 
@@ -153,6 +188,7 @@ HTML_PAGE = """<!DOCTYPE html>
                     <input type="text" id="rack-input" maxlength="7" placeholder="EX: TIREUR?" value="TIREUR?">
                     <button onclick="solvePosition()">⚡ Résoudre</button>
                 </div>
+                <div id="strategy-banner"></div>
                 <div style="display: flex; gap: 6px;">
                     <button class="secondary" style="flex:1;" onclick="applyTopMove()">Poser Top Coup</button>
                     <button class="secondary" style="flex:1;" onclick="clearPreview()">Effacer Aperçu</button>
@@ -238,6 +274,12 @@ HTML_PAGE = """<!DOCTYPE html>
         const TILE_VALUES = {{TILE_VALUES}};
         let currentGrid = Array(15).fill(null).map(() => Array(15).fill(null));
         let lastSuggestedMoves = [];
+        let selectedCell = null;
+        let typingHorizontal = true;
+        let undoStack = [];
+        let scoreUs = 0;
+        let scoreOpp = 0;
+        let moveHistory = [];
 
         function initBoard() {
             const container = document.getElementById('board');
@@ -258,7 +300,13 @@ HTML_PAGE = """<!DOCTYPE html>
                     container.appendChild(cell);
                 }
             }
-            updateBagCount();
+            const restored = loadFromLocalStorage();
+            renderGrid();
+            if (!restored) {
+                updateBagCount();
+            } else {
+                solvePosition();
+            }
         }
 
         function renderGrid() {
@@ -269,6 +317,11 @@ HTML_PAGE = """<!DOCTYPE html>
                     const bonus = BOARD_BONUS[r][c];
                     if (bonus) cell.classList.add(bonus);
                     else cell.classList.add('normal');
+
+                    if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
+                        cell.classList.add('selected');
+                        cell.style.setProperty('--direction-arrow', typingHorizontal ? "'→'" : "'↓'");
+                    }
 
                     const tile = currentGrid[r][c];
                     if (tile) {
@@ -285,22 +338,165 @@ HTML_PAGE = """<!DOCTYPE html>
         }
 
         function onCellClick(r, c) {
-            const cur = currentGrid[r][c] || '';
-            const res = prompt(`Lettre en (${String.fromCharCode(65+r)}${c+1}) :\\n(Majuscule = normale, Minuscule = joker, Vide = effacer)`, cur);
-            if (res !== null) {
-                const trimmed = res.trim();
-                currentGrid[r][c] = trimmed ? trimmed[0] : null;
-                renderGrid();
+            if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
+                typingHorizontal = !typingHorizontal;
+            } else {
+                selectedCell = { r, c };
+            }
+            renderGrid();
+        }
+
+        function pushUndoState() {
+            if (undoStack.length >= 50) undoStack.shift();
+            undoStack.push({
+                grid: JSON.parse(JSON.stringify(currentGrid)),
+                scoreUs: scoreUs,
+                scoreOpp: scoreOpp,
+                moveHistory: JSON.parse(JSON.stringify(moveHistory)),
+                rack: document.getElementById('rack-input').value,
+                alertHtml: document.getElementById('move-alert').innerHTML,
+            });
+        }
+
+        function undoLastAction() {
+            if (undoStack.length === 0) return;
+            const last = undoStack.pop();
+            currentGrid = last.grid;
+            scoreUs = last.scoreUs;
+            scoreOpp = last.scoreOpp;
+            moveHistory = last.moveHistory;
+            document.getElementById('rack-input').value = last.rack;
+            document.getElementById('move-alert').innerHTML = last.alertHtml || '';
+            updateScoreboard();
+            renderGrid();
+            saveToLocalStorage();
+            solvePosition();
+        }
+
+        function updateScoreboard() {
+            const elUs = document.getElementById('score-us');
+            const elOpp = document.getElementById('score-opp');
+            const elDiff = document.getElementById('score-diff');
+            if (elUs) elUs.textContent = scoreUs;
+            if (elOpp) elOpp.textContent = scoreOpp;
+            if (elDiff) {
+                const diff = scoreUs - scoreOpp;
+                elDiff.textContent = (diff >= 0 ? '+' : '') + diff;
+                elDiff.style.color = diff >= 0 ? 'var(--accent-green)' : 'var(--c-md)';
             }
         }
 
-        function clearBoard() {
-            if (confirm("Vider complètement le plateau ?")) {
-                currentGrid = Array(15).fill(null).map(() => Array(15).fill(null));
-                renderGrid();
-                document.getElementById('moves-tbody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6b7280;">Plateau vidé.</td></tr>';
-            }
+        function saveToLocalStorage() {
+            try {
+                const state = {
+                    grid: currentGrid,
+                    rack: document.getElementById('rack-input').value,
+                    scoreUs: scoreUs,
+                    scoreOpp: scoreOpp,
+                    moveHistory: moveHistory
+                };
+                localStorage.setItem('scrabble_enzo_state_v1', JSON.stringify(state));
+            } catch (e) {}
         }
+
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('scrabble_enzo_state_v1');
+                if (!saved) return false;
+                const state = JSON.parse(saved);
+                if (state && Array.isArray(state.grid)) {
+                    currentGrid = state.grid;
+                    if (state.rack) document.getElementById('rack-input').value = state.rack;
+                    scoreUs = state.scoreUs || 0;
+                    scoreOpp = state.scoreOpp || 0;
+                    moveHistory = state.moveHistory || [];
+                    updateScoreboard();
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        }
+
+        function clearBoard() {
+            pushUndoState();
+            currentGrid = Array(15).fill(null).map(() => Array(15).fill(null));
+            scoreUs = 0;
+            scoreOpp = 0;
+            moveHistory = [];
+            selectedCell = null;
+            updateScoreboard();
+            renderGrid();
+            saveToLocalStorage();
+            document.getElementById('moves-tbody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6b7280;">Plateau vidé.</td></tr>';
+            document.getElementById('move-alert').innerHTML = '<div style="color: #9ca3af; font-size: 0.8rem; padding: 4px 0;">Plateau vidé. Cliquez sur ↩️ Annuler si besoin.</div>';
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const activeTag = document.activeElement ? document.activeElement.tagName : '';
+            if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                typingHorizontal = !typingHorizontal;
+                renderGrid();
+                return;
+            }
+
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                if (selectedCell) selectedCell.c = Math.min(14, selectedCell.c + 1);
+                else selectedCell = { r: 7, c: 7 };
+                renderGrid();
+                return;
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (selectedCell) selectedCell.c = Math.max(0, selectedCell.c - 1);
+                else selectedCell = { r: 7, c: 7 };
+                renderGrid();
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (selectedCell) selectedCell.r = Math.min(14, selectedCell.r + 1);
+                else selectedCell = { r: 7, c: 7 };
+                renderGrid();
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (selectedCell) selectedCell.r = Math.max(0, selectedCell.r - 1);
+                else selectedCell = { r: 7, c: 7 };
+                renderGrid();
+                return;
+            }
+
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                if (!selectedCell) return;
+                e.preventDefault();
+                pushUndoState();
+                currentGrid[selectedCell.r][selectedCell.c] = null;
+                if (e.key === 'Backspace') {
+                    if (typingHorizontal && selectedCell.c > 0) selectedCell.c--;
+                    else if (!typingHorizontal && selectedCell.r > 0) selectedCell.r--;
+                }
+                renderGrid();
+                saveToLocalStorage();
+                return;
+            }
+
+            if (/^[a-zA-Z]$/.test(e.key)) {
+                if (!selectedCell) selectedCell = { r: 7, c: 7 };
+                pushUndoState();
+                const ch = e.shiftKey ? e.key.toLowerCase() : e.key.toUpperCase();
+                currentGrid[selectedCell.r][selectedCell.c] = ch;
+                if (typingHorizontal && selectedCell.c < 14) selectedCell.c++;
+                else if (!typingHorizontal && selectedCell.r < 14) selectedCell.r++;
+                renderGrid();
+                saveToLocalStorage();
+                return;
+            }
+        });
 
         async function solvePosition() {
             const rack = document.getElementById('rack-input').value.trim().toUpperCase();
@@ -320,6 +516,65 @@ HTML_PAGE = """<!DOCTYPE html>
             lastSuggestedMoves = data.moves;
             displayMoves(data.moves);
             updateBagDisplay(data.remaining_tiles, data.total_remaining);
+            updateStrategyBanner(data);
+        }
+
+        function updateStrategyBanner(data) {
+            const banner = document.getElementById('strategy-banner');
+            if (!banner) return;
+            let html = '';
+            if (data.is_endgame && data.deduced_opp_rack) {
+                html += `<div style="background: rgba(59, 130, 246, 0.2); border: 1px solid var(--accent-blue); padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.82rem; color: #93c5fd;">🔍 <strong>Fin de partie (Sac vide)</strong> — Chevalet déduit d'Enzo : <b>${data.deduced_opp_rack}</b> (Solveur exact 2-plis actif)</div>`;
+            }
+            if (data.best_exchange) {
+                const topEquity = (data.moves && data.moves.length > 0) ? data.moves[0].equity : -9999;
+                if (topEquity < data.best_exchange.equity || !data.moves || data.moves.length === 0) {
+                    html += `<div style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--accent-gold); padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.82rem; color: #fde68a;">💡 <strong>Conseil Stratégique :</strong> Échanger <b>${data.best_exchange.dump}</b> (garder <b>${data.best_exchange.keep || 'rien'}</b>, équité ${data.best_exchange.equity > 0 ? '+' : ''}${data.best_exchange.equity}) — Meilleur coup plateau : ${topEquity > -999 ? topEquity : 'aucun'}</div>`;
+                }
+            }
+            banner.innerHTML = html;
+        }
+
+        async function playOpponentMove() {
+            const coord = document.getElementById('opp-coord').value.trim().toUpperCase();
+            const word = document.getElementById('opp-word').value.trim().toUpperCase();
+            const alertDiv = document.getElementById('move-alert');
+            if (!coord || !word) {
+                alertDiv.innerHTML = '<div style="color: #f87171; font-size: 0.82rem;">Veuillez indiquer la coordonnée (ex: 8D) et le mot.</div>';
+                return;
+            }
+            try {
+                const res = await fetch('/api/play_move', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ grid: currentGrid, coord: coord, word: word })
+                });
+                const data = await res.json();
+                if (!res.ok || data.error) {
+                    alertDiv.innerHTML = `<div style="color: #ef4444; font-size: 0.82rem; margin-top: 6px;">❌ Erreur : ${data.error || 'Coup invalide'}</div>`;
+                    return;
+                }
+
+                pushUndoState();
+                currentGrid = data.grid;
+                scoreOpp += data.score;
+                moveHistory.push({ player: 'opp', coord: data.coord, word: data.word, score: data.score, valid: data.valid_ods8 });
+                updateScoreboard();
+                renderGrid();
+                saveToLocalStorage();
+
+                if (data.valid_ods8) {
+                    alertDiv.innerHTML = `<div style="color: #10b981; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; padding: 6px 10px; border-radius: 6px; font-size: 0.82rem; margin-top: 6px;">✅ Coup d'Enzo : <b>${data.coord} ${data.word}</b> (+${data.score} pts) — Mots formés : ${data.formed_words.join(', ')}</div>`;
+                } else {
+                    alertDiv.innerHTML = `<div style="color: #ef4444; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; padding: 8px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: bold; margin-top: 6px;">🚨 CONTESTATION ODS8 ! Mot(s) invalide(s) : ${data.invalid_words.join(', ')} (+${data.score} pts si non contesté) — Cliquez sur ↩️ Annuler pour retirer le mot !</div>`;
+                }
+
+                document.getElementById('opp-coord').value = '';
+                document.getElementById('opp-word').value = '';
+                solvePosition();
+            } catch (err) {
+                alertDiv.innerHTML = `<div style="color: #ef4444; font-size: 0.82rem; margin-top: 6px;">❌ Erreur réseau : ${err.message}</div>`;
+            }
         }
 
         function displayMoves(moves) {
@@ -376,6 +631,7 @@ HTML_PAGE = """<!DOCTYPE html>
         function playMove(idx) {
             const m = lastSuggestedMoves[idx];
             if (!m) return;
+            pushUndoState();
             const L = m.word.length;
             for (let i = 0; i < L; i++) {
                 const r = m.horizontal ? m.row : m.row + i;
@@ -384,8 +640,12 @@ HTML_PAGE = """<!DOCTYPE html>
                     currentGrid[r][c] = m.word[i];
                 }
             }
+            scoreUs += m.score;
+            moveHistory.push({ player: 'us', coord: m.coord_fisf, word: m.word, score: m.score });
+            updateScoreboard();
             document.getElementById('rack-input').value = m.leave;
             renderGrid();
+            saveToLocalStorage();
             solvePosition();
         }
 
@@ -532,17 +792,42 @@ class ScrabbleHTTPHandler(BaseHTTPRequestHandler):
             opp_rack = payload.get("opp_rack")
             board = Board.from_dict(grid_data) if grid_data else Board()
 
-            # Stratégiste pour scorer l'équité
-            strat = EnzoStrategist(dict_obj, gen)
             moves = gen.generate_all_moves(board, rack)
-            bag_count = board.total_remaining_tiles(rack)
+            rem_tiles = board.remaining_tiles(rack)
+            total_remaining = sum(rem_tiles.values())
+            is_endgame = (total_remaining <= 7)
+            deduced_opp_rack = "".join(ch * cnt for ch, cnt in sorted(rem_tiles.items()) if cnt > 0) if is_endgame else ""
 
-            # Évaluer chaque coup avec EnzoStrategist
-            moves_out = []
-            for m in moves[:50]:
+            bag_count = max(0, total_remaining - 7)
+            for m in moves:
                 lv = evaluate_leave(m.leave)
                 dp = evaluate_defense_penalty(board, m, bag_count)
-                eq = round(m.score + lv - dp, 2)
+                m.leave_value = lv
+                m.defense_penalty = dp
+                m.equity = round(m.score + lv - dp, 2)
+
+            effective_opp_rack = opp_rack or deduced_opp_rack
+            endgame_spread = 0.0
+            if is_endgame and effective_opp_rack and moves:
+                _, endgame_spread = solve_endgame_2ply(
+                    board, rack, effective_opp_rack, dict_obj, gen, top_k=15
+                )
+
+            # Sélection de l'union des 40 meilleurs par équité et des 40 meilleurs par score brut
+            moves_by_equity = sorted(moves, key=lambda m: m.equity, reverse=True)[:40]
+            moves_by_score = sorted(moves, key=lambda m: m.score, reverse=True)[:40]
+            seen_signatures = set()
+            selected_moves = []
+            for m in moves_by_equity + moves_by_score:
+                sig = (m.row, m.col, m.horizontal, m.word)
+                if sig not in seen_signatures:
+                    seen_signatures.add(sig)
+                    selected_moves.append(m)
+
+            selected_moves.sort(key=lambda m: m.equity, reverse=True)
+
+            moves_out = []
+            for m in selected_moves:
                 moves_out.append({
                     "word": m.word,
                     "row": m.row,
@@ -552,23 +837,38 @@ class ScrabbleHTTPHandler(BaseHTTPRequestHandler):
                     "score": m.score,
                     "tiles_placed": m.tiles_placed,
                     "leave": m.leave,
-                    "leave_value": lv,
-                    "defense_penalty": dp,
-                    "equity": eq,
+                    "leave_value": m.leave_value,
+                    "defense_penalty": m.defense_penalty,
+                    "equity": m.equity,
                     "cross_words": m.cross_words,
                 })
 
-            # Trier par équité décroissante (EnzoStrategist)
-            moves_out.sort(key=lambda item: item["equity"], reverse=True)
-
-            rem_tiles = board.remaining_tiles(rack)
             response_data = {
                 "moves": moves_out,
                 "remaining_tiles": rem_tiles,
-                "total_remaining": sum(rem_tiles.values()),
-                "is_endgame": (sum(rem_tiles.values()) == 0),
+                "total_remaining": total_remaining,
+                "is_endgame": is_endgame,
+                "deduced_opp_rack": deduced_opp_rack,
+                "best_exchange": evaluate_best_exchange(rack, total_remaining),
+                "endgame_spread": endgame_spread if is_endgame else None,
             }
             self._send_json(response_data)
+
+        elif self.path == "/api/play_move":
+            grid_data = payload.get("grid")
+            coord = payload.get("coord", "").strip()
+            word = payload.get("word", "").strip()
+            board = Board.from_dict(grid_data) if grid_data else Board()
+            try:
+                res = place_and_score_move(board, dict_obj, coord, word)
+                self._send_json(res)
+            except Exception as e:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                err_bytes = json.dumps({"error": str(e)}, ensure_ascii=False).encode("utf-8")
+                self.send_header("Content-Length", str(len(err_bytes)))
+                self.end_headers()
+                self.wfile.write(err_bytes)
 
         elif self.path == "/api/train":
             mode = payload.get("mode")

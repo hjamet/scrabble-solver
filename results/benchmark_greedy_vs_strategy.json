@@ -10,7 +10,7 @@
   "avg_spread": 21.7,
   "avg_bingos_strategist": 2.4,
   "avg_bingos_greedy": 1.97,
-  "avg_move_time_ms": 28.92,
+  "avg_move_time_ms": 46.43,
   "games": [
     {
       "first_player": "Strategist",
@@ -21,7 +21,7 @@
       "bingos_strategist": 1,
       "bingos_greedy": 1,
       "turns": 23,
-      "avg_move_time_ms": 20.76,
+      "avg_move_time_ms": 17.22,
       "game_id": 1,
       "seed": 42
     },
@@ -34,7 +34,7 @@
       "bingos_strategist": 2,
       "bingos_greedy": 3,
       "turns": 22,
-      "avg_move_time_ms": 21.63,
+      "avg_move_time_ms": 18.98,
       "game_id": 2,
       "seed": 43
     },
@@ -47,7 +47,7 @@
       "bingos_strategist": 4,
       "bingos_greedy": 2,
       "turns": 24,
-      "avg_move_time_ms": 26.17,
+      "avg_move_time_ms": 29.76,
       "game_id": 3,
       "seed": 44
     },
@@ -60,7 +60,7 @@
       "bingos_strategist": 3,
       "bingos_greedy": 1,
       "turns": 24,
-      "avg_move_time_ms": 17.29,
+      "avg_move_time_ms": 27.17,
       "game_id": 4,
       "seed": 45
     },
@@ -73,7 +73,7 @@
       "bingos_strategist": 1,
       "bingos_greedy": 4,
       "turns": 23,
-      "avg_move_time_ms": 23.0,
+      "avg_move_time_ms": 40.11,
       "game_id": 5,
       "seed": 46
     },
@@ -86,7 +86,7 @@
       "bingos_strategist": 2,
       "bingos_greedy": 3,
       "turns": 20,
-      "avg_move_time_ms": 35.03,
+      "avg_move_time_ms": 56.12,
       "game_id": 6,
       "seed": 47
     },
@@ -99,7 +99,7 @@
       "bingos_strategist": 1,
       "bingos_greedy": 3,
       "turns": 24,
-      "avg_move_time_ms": 36.27,
+      "avg_move_time_ms": 65.49,
       "game_id": 7,
       "seed": 48
     },
@@ -112,7 +112,7 @@
       "bingos_strategist": 3,
       "bingos_greedy": 1,
       "turns": 20,
-      "avg_move_time_ms": 44.16,
+      "avg_move_time_ms": 66.42,
       "game_id": 8,
       "seed": 49
     },
@@ -125,7 +125,7 @@
       "bingos_strategist": 2,
       "bingos_greedy": 1,
       "turns": 25,
-      "avg_move_time_ms": 42.88,
+      "avg_move_time_ms": 66.89,
       "game_id": 9,
       "seed": 50
     },
@@ -138,7 +138,7 @@
       "bingos_strategist": 4,
       "bingos_greedy": 2,
       "turns": 21,
-      "avg_move_time_ms": 22.07,
+      "avg_move_time_ms": 34.93,
       "game_id": 10,
       "seed": 51
     },
@@ -151,7 +151,7 @@
       "bingos_strategist": 1,
       "bingos_greedy": 4,
       "turns": 19,
-      "avg_move_time_ms": 23.22,
+      "avg_move_time_ms": 38.67,
       "game_id": 11,
       "seed": 52
     },
@@ -164,7 +164,7 @@
       "bingos_strategist": 1,
       "bingos_greedy": 0,
       "turns": 24,
-      "avg_move_time_ms": 19.35,
+      "avg_move_time_ms": 30.72,
       "game_id": 12,
       "seed": 53
     },
@@ -177,7 +177,7 @@
       "bingos_strategist": 2,
       "bingos_greedy": 1,
       "turns": 23,
-      "avg_move_time_ms": 23.48,
+      "avg_move_time_ms": 38.88,
       "game_id": 13,
       "seed": 54
     },
@@ -190,7 +190,7 @@
       "bingos_strategist": 1,
       "bingos_greedy": 2,
       "turns": 25,
-      "avg_move_time_ms": 27.39,
+      "avg_move_time_ms": 46.12,
       "game_id": 14,
       "seed": 55
     },
@@ -203,7 +203,7 @@
       "bingos_strategist": 4,
       "bingos_greedy": 3,
       "turns": 25,
-      "avg_move_time_ms": 51.19,
+      "avg_move_time_ms": 66.08,
       "game_id": 15,
       "seed": 56
     },
@@ -216,7 +216,7 @@
       "bingos_strategist": 1,
       "bingos_greedy": 2,
       "turns": 23,
-      "avg_move_time_ms": 29.04,
+      "avg_move_time_ms": 59.74,
       "game_id": 16,
       "seed": 57
     },
@@ -229,7 +229,7 @@
       "bingos_strategist": 5,
       "bingos_greedy": 1,
       "turns": 21,
-      "avg_move_time_ms": 41.94,
+      "avg_move_time_ms": 91.82,
       "game_id": 17,
       "seed": 58
     },
@@ -242,7 +242,7 @@
       "bingos_strategist": 2,
       "bingos_greedy": 2,
       "turns": 25,
-      "avg_move_time_ms": 26.21,
+      "avg_move_time_ms": 48.62,
       "game_id": 18,
       "seed": 59
     },
@@ -255,7 +255,7 @@
       "bingos_strategist": 4,
       "bingos_greedy": 2,
       "turns": 24,
-      "avg_move_time_ms": 38.99,
+      "avg_move_time_ms": 55.55,
       "game_id": 19,
       "seed": 60
     },
@@ -268,7 +268,7 @@
       "bingos_strategist": 5,
       "bingos_greedy": 1,
       "turns": 25,
-      "avg_move_time_ms": 38.99,
+      "avg_move_time_ms": 62.85,
       "game_id": 20,
       "seed": 61
     },
@@ -281,7 +281,7 @@
       "bingos_strategist": 4,
       "bingos_greedy": 3,
       "turns": 19,
-      "avg_move_time_ms": 36.5,
+      "avg_move_time_ms": 57.16,
       "game_id": 21,
       "seed": 62
     },
@@ -294,7 +294,7 @@
       "bingos_strategist": 2,
       "bingos_greedy": 2,
       "turns": 24,
-      "avg_move_time_ms": 26.35,
+      "avg_move_time_ms": 42.31,
       "game_id": 22,
       "seed": 63
     },
@@ -307,7 +307,7 @@
       "bingos_strategist": 3,
       "bingos_greedy": 1,
       "turns": 23,
-      "avg_move_time_ms": 18.39,
+      "avg_move_time_ms": 28.92,
       "game_id": 23,
       "seed": 64
     },
@@ -320,7 +320,7 @@
       "bingos_strategist": 3,
       "bingos_greedy": 1,
       "turns": 24,
-      "avg_move_time_ms": 26.36,
+      "avg_move_time_ms": 49.13,
       "game_id": 24,
       "seed": 65
     },
@@ -333,7 +333,7 @@
       "bingos_strategist": 2,
       "bingos_greedy": 3,
       "turns": 24,
-      "avg_move_time_ms": 33.21,
+      "avg_move_time_ms": 58.14,
       "game_id": 25,
       "seed": 66
     },
@@ -346,7 +346,7 @@
       "bingos_strategist": 1,
       "bingos_greedy": 2,
       "turns": 24,
-      "avg_move_time_ms": 18.19,
+      "avg_move_time_ms": 36.02,
       "game_id": 26,
       "seed": 67
     },
@@ -359,7 +359,7 @@
       "bingos_strategist": 1,
       "bingos_greedy": 1,
       "turns": 25,
-      "avg_move_time_ms": 18.96,
+      "avg_move_time_ms": 30.33,
       "game_id": 27,
       "seed": 68
     },
@@ -372,7 +372,7 @@
       "bingos_strategist": 2,
       "bingos_greedy": 3,
       "turns": 23,
-      "avg_move_time_ms": 25.61,
+      "avg_move_time_ms": 41.93,
       "game_id": 28,
       "seed": 69
     },
@@ -385,7 +385,7 @@
       "bingos_strategist": 1,
       "bingos_greedy": 3,
       "turns": 23,
-      "avg_move_time_ms": 24.5,
+      "avg_move_time_ms": 39.99,
       "game_id": 29,
       "seed": 70
     },
@@ -398,7 +398,7 @@
       "bingos_strategist": 4,
       "bingos_greedy": 1,
       "turns": 20,
-      "avg_move_time_ms": 30.41,
+      "avg_move_time_ms": 46.74,
       "game_id": 30,
       "seed": 71
     }
